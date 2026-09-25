@@ -60,7 +60,6 @@ export async function POST(req: Request) {
   }
 
   const latest = messages[messages.length - 1].content;
-  const previousQuestion = messages[messages.length - 2].content;
   const questionNumber: number | "final" =
     answered + 1 >= TOTAL_QUESTIONS ? "final" : answered + 2;
   const allowReask = reasksUsed < MAX_REASKS;
@@ -75,7 +74,7 @@ export async function POST(req: Request) {
   // 2. Classifier and generation run in parallel; the generated text is only
   //    released if the classifier clears the message.
   const [safety, next] = await Promise.allSettled([
-    classifySafety(previousQuestion, latest),
+    classifySafety(messages),
     generateNext(messages, questionNumber, allowReask),
   ]);
 
