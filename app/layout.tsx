@@ -9,6 +9,9 @@ const jost = Jost({ subsets: ["latin"], weight: ["400", "700"], variable: "--fon
 export const metadata: Metadata = {
   title: "Askesis — What's your why?",
   description: "Seven questions to find the purpose underneath your goal.",
+  applicationName: "Askesis",
+  // Full-screen when opened from the iPhone home screen.
+  appleWebApp: { capable: true, title: "Askesis", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {
