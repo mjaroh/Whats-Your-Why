@@ -36,6 +36,7 @@ function toApiMessages(
   history: ChatMessage[],
   questionNumber: number | "final",
   allowReask: boolean,
+  reminder?: string,
 ): Anthropic.MessageParam[] {
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: "[The athlete opened the Seven Whys.]" },
@@ -50,6 +51,7 @@ function toApiMessages(
     const note =
       `[Question number: ${questionNumber}` +
       (allowReask ? "" : ". Re-asking is no longer allowed") +
+      (reminder ? `. ${reminder}` : "") +
       "]";
     messages.push({
       role: "user",
@@ -66,17 +68,19 @@ export async function generateNext(
   history: ChatMessage[],
   questionNumber: number | "final",
   allowReask: boolean,
+  reminder?: string,
 ): Promise<WhyOutput> {
   const response = await anthropic().messages.parse({
     model: MODEL,
-    max_tokens: 4000,
+    max_tokens: 8000,
     system: SYSTEM_PROMPT,
-    messages: toApiMessages(history, questionNumber, allowReask),
+    messages: toApiMessages(history, questionNumber, allowReask, reminder),
     output_config: { effort: "low", format: zodOutputFormat(WhyOutput) },
   });
   if (response.stop_reason === "refusal") {
     throw new Error(`model refusal: ${response.stop_details?.category ?? "unknown"}`);
   }
+  if (response.stop_reason === "max_tokens") throw new Error("model output hit max_tokens");
   if (!response.parsed_output) throw new Error("unparseable model output");
   return response.parsed_output;
 }

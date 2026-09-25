@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { classifySafety, generateNext } from "@/lib/claude";
+import { classifySafety, generateNext, type WhyOutput } from "@/lib/claude";
 import {
   FIRST_QUESTION,
   MAX_ANSWER_CHARS,
@@ -85,28 +85,58 @@ export async function POST(req: Request) {
     return reply({ type: "crisis" });
   }
 
-  if (next.status === "rejected") {
-    console.error("generation failed", next.reason);
-    return reply({ type: "error", text: "Something went wrong. Try sending that again." }, 502);
-  }
-  const out = next.value;
+  const logModelCrisis = () =>
+    logCrisisEvent({ source: "model", category: null, questionNumber, message: latest, ipHash });
 
-  if (out.type === "crisis") {
-    await logCrisisEvent({ source: "model", category: null, questionNumber, message: latest, ipHash });
+  // Turns model output into a reply, or null if it doesn't fit this step
+  // (wrong type, empty text).
+  const accept = (out: WhyOutput): WhyResponse | null => {
+    const text = out.text.trim();
+    if (!text) return null;
+    const isReask = out.type === "question" && out.deflection && allowReask;
+    if (questionNumber === "final") {
+      if (out.type === "final") return { type: "final", text, answered: TOTAL_QUESTIONS };
+      if (isReask) return { type: "question", text, answered };
+      return null;
+    }
+    if (out.type === "question") {
+      return { type: "question", text, answered: isReask ? answered : answered + 1 };
+    }
+    return null;
+  };
+
+  let first: WhyOutput | null = null;
+  if (next.status === "rejected") console.error("generation failed", next.reason);
+  else first = next.value;
+
+  if (first?.type === "crisis") {
+    await logModelCrisis();
     return reply({ type: "crisis" });
   }
+  const firstReply = first ? accept(first) : null;
+  if (firstReply) return reply(firstReply);
+  if (first) console.warn("unusable model output; retrying", { questionNumber, type: first.type });
 
-  const isReask = out.type === "question" && out.deflection && allowReask;
-  const text = out.text.trim();
-  if (!text) return reply({ type: "error", text: "Something went wrong. Try sending that again." }, 502);
-
-  if (questionNumber === "final") {
-    if (out.type === "final") return reply({ type: "final", text, answered: TOTAL_QUESTIONS });
-    if (isReask) return reply({ type: "question", text, answered });
-  } else if (out.type === "question") {
-    return reply({ type: "question", text, answered: isReask ? answered : answered + 1 });
+  // One retry with an explicit reminder of what this step needs.
+  const reminder =
+    questionNumber === "final"
+      ? 'Reminder: respond with type "final" and the purpose statement now'
+      : `Reminder: respond with type "question" and ask question ${questionNumber}. Do not write the purpose statement yet`;
+  try {
+    const second = await generateNext(messages, questionNumber, allowReask, reminder);
+    if (second.type === "crisis") {
+      await logModelCrisis();
+      return reply({ type: "crisis" });
+    }
+    const secondReply = accept(second);
+    if (secondReply) return reply(secondReply);
+    // Still insists on the purpose statement: show it rather than an error.
+    if (second.type === "final" && second.text.trim()) {
+      return reply({ type: "final", text: second.text.trim(), answered: TOTAL_QUESTIONS });
+    }
+    console.error("unusable model output after retry", { questionNumber, type: second.type });
+  } catch (err) {
+    console.error("generation retry failed", err);
   }
-
-  console.error("unexpected model output type", { questionNumber, type: out.type });
   return reply({ type: "error", text: "Something went wrong. Try sending that again." }, 502);
 }
