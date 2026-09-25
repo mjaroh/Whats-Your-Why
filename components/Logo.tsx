@@ -1,11 +1,13 @@
-// Placeholder for the Askesis A-mark. Swap the SVG for the real mark.
+// The Askesis A-mark (white on transparent, public/askesis-mark.png).
 export function Logo() {
   return (
-    <div className="pointer-events-none fixed top-5 left-5 z-10 opacity-80" aria-label="Askesis">
-      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <path d="M16 3 L29 29 H23 L16 14 L9 29 H3 Z" fill="currentColor" />
-        <rect x="11" y="21" width="10" height="2.5" fill="var(--color-ink)" />
-      </svg>
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/askesis-mark.png"
+      alt="Askesis"
+      width={21}
+      height={32}
+      className="pointer-events-none fixed top-5 left-5 z-10 h-8 w-auto opacity-90"
+    />
   );
 }
