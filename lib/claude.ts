@@ -86,10 +86,14 @@ export async function generateNext(
 }
 
 /** Returns a concern category, or null if the message looks safe. */
-export async function classifySafety(
-  previousQuestion: string,
-  answer: string,
-): Promise<ConcernCategory | null> {
+export async function classifySafety(history: ChatMessage[]): Promise<ConcernCategory | null> {
+  // The full exercise so far gives context: faith, sport and figures of speech
+  // read very differently on their own than inside the conversation.
+  const transcript = history
+    .slice(0, -1)
+    .map((m) => (m.role === "assistant" ? `Q: ${m.content}` : `Athlete: ${m.content}`))
+    .join("\n");
+  const latest = history[history.length - 1].content;
   const response = await anthropic().messages.parse({
     model: MODEL,
     max_tokens: 2000,
@@ -98,8 +102,8 @@ export async function classifySafety(
       {
         role: "user",
         content:
-          `Question the athlete was asked:\n<question>${previousQuestion}</question>\n\n` +
-          `Athlete's latest message:\n<message>${answer}</message>`,
+          `Conversation so far:\n<conversation>\n${transcript}\n</conversation>\n\n` +
+          `Athlete's latest message (the one to screen):\n<message>${latest}</message>`,
       },
     ],
     output_config: { effort: "low", format: zodOutputFormat(SafetyOutput) },

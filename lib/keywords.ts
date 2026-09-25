@@ -7,7 +7,9 @@ export type ConcernCategory = "suicide" | "self_harm" | "abuse" | "danger";
 const PATTERNS: Array<[ConcernCategory, RegExp]> = [
   ["suicide", /\bsuicid(e|al)\b/],
   ["suicide", /\bkill(ing)?\s+my\s*self\b/],
-  ["suicide", /\b(want|wanna|going|gonna)\s+(to\s+)?die\b/],
+  // "die to myself", "die for Christ", "die on this hill" are figurative and
+  // left to the classifier, which sees the whole conversation.
+  ["suicide", /\b(want|wanna|going|gonna)\s+(to\s+)?die\b(?!\s+(to|on|trying)\b|\s+for\s+(?!real\b))/],
   ["suicide", /\bend\s+(it\s+all|my\s+life)\b/],
   ["suicide", /\b(better\s+off\s+dead|no\s+reason\s+to\s+live|not\s+worth\s+living)\b/],
   ["suicide", /\bdon'?t\s+want\s+to\s+(be\s+alive|live|be\s+here\s+anymore|exist)\b/],
