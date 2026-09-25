@@ -130,6 +130,10 @@ export async function POST(req: Request) {
     }
     const secondReply = accept(second);
     if (secondReply) return reply(secondReply);
+    // Still insists on the purpose statement: show it rather than an error.
+    if (second.type === "final" && second.text.trim()) {
+      return reply({ type: "final", text: second.text.trim(), answered: TOTAL_QUESTIONS });
+    }
     console.error("unusable model output after retry", { questionNumber, type: second.type });
   } catch (err) {
     console.error("generation retry failed", err);
