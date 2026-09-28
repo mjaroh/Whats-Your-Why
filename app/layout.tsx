@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             appearance={clerkAppearance}
             signInUrl="/sign-in"
             signUpUrl="/sign-up"
-            signInFallbackRedirectUrl="/coach"
+            signInFallbackRedirectUrl="/community"
             signUpForceRedirectUrl="/welcome"
           >
             {children}

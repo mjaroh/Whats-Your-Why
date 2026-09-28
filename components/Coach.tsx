@@ -1,7 +1,7 @@
 "use client";
 
-import { useClerk } from "@clerk/nextjs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AppNav } from "./AppNav";
 import { Crisis } from "./Crisis";
 
 type Msg = {
@@ -15,6 +15,7 @@ export function Coach(props: {
   firstName: string | null;
   statement: string | null;
   initialMessages: Msg[];
+  admin: boolean;
 }) {
   const [messages, setMessages] = useState<Msg[]>(props.initialMessages);
   const [draft, setDraft] = useState("");
@@ -112,7 +113,7 @@ export function Coach(props: {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
-      <Header />
+      <AppNav active="coach" member admin={props.admin} />
 
       <div className="flex flex-1 flex-col justify-end gap-7 pt-6 pb-8" aria-live="polite">
         {props.statement && (
@@ -219,48 +220,5 @@ function Thinking() {
         />
       ))}
     </div>
-  );
-}
-
-function Header() {
-  const [open, setOpen] = useState(false);
-  const { signOut } = useClerk();
-
-  async function manage() {
-    const res = await fetch("/api/billing/portal", { method: "POST" }).catch(() => null);
-    const data = (await res?.json().catch(() => null)) as { url?: string } | null;
-    if (data?.url) window.location.href = data.url;
-  }
-
-  const item = "block w-full px-5 py-3 text-left text-sm text-paper/80 hover:bg-paper/5";
-  return (
-    <header className="sticky top-0 z-10 flex items-center justify-between bg-ink/90 pt-5 pb-4 backdrop-blur-sm">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/askesis-mark.png" alt="Askesis" width={21} height={32} className="h-8 w-auto opacity-90" />
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Menu"
-          aria-expanded={open}
-          className="px-2 py-1 text-xl leading-none text-paper/70"
-        >
-          •••
-        </button>
-        {open && (
-          <div className="absolute right-0 mt-2 w-56 border border-line bg-ink py-2">
-            <a href="/?retake=1" className={item}>
-              Retake the Seven Whys
-            </a>
-            <button type="button" onClick={manage} className={item}>
-              Manage membership
-            </button>
-            <button type="button" onClick={() => signOut({ redirectUrl: "/" })} className={item}>
-              Sign out
-            </button>
-          </div>
-        )}
-      </div>
-    </header>
   );
 }

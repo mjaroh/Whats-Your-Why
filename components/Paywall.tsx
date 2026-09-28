@@ -1,13 +1,16 @@
 "use client";
 
-import { useClerk } from "@clerk/nextjs";
 import { useState } from "react";
-import { Logo } from "./Logo";
+import { AppNav } from "./AppNav";
 
-export function Paywall(props: { statement: string | null; price: string; open: boolean }) {
+export function Paywall(props: {
+  statement: string | null;
+  price: string;
+  open: boolean;
+  admin: boolean;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signOut } = useClerk();
 
   async function start() {
     setBusy(true);
@@ -24,19 +27,19 @@ export function Paywall(props: { statement: string | null; price: string; open: 
   }
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-6 pt-28 pb-16">
-      <Logo />
-      <div className="rise w-full max-w-md">
+    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
+      <AppNav active="coach" member={false} admin={props.admin} />
+      <div className="rise mx-auto flex w-full max-w-md flex-1 flex-col justify-center pt-10 pb-16">
         {props.statement && (
           <p className="font-display mb-12 text-2xl leading-snug font-bold tracking-tight">
             &ldquo;{props.statement}&rdquo;
           </p>
         )}
-        <h1 className="text-xs tracking-[0.2em] text-mute uppercase">Askesis membership</h1>
+        <h1 className="text-xs tracking-[0.2em] text-mute uppercase">Your own coach</h1>
         <ul className="mt-5 space-y-3 leading-relaxed text-paper/80">
-          <li>A coach that teaches in Michael&rsquo;s voice, built on your why.</li>
+          <li>A private coach that teaches in Michael&rsquo;s voice, built on your why.</li>
           <li>Talk to it anytime: before a meet, after a rough practice.</li>
-          <li>A short check-in every day.</li>
+          <li>Your own daily check-in, on top of the group&rsquo;s.</li>
         </ul>
         {error && <p className="mt-6 text-sm text-mute">{error}</p>}
         <button
@@ -48,13 +51,6 @@ export function Paywall(props: { statement: string | null; price: string; open: 
           {!props.open ? "Opening soon" : busy ? "Opening checkout…" : `Start · ${props.price}`}
         </button>
         <p className="mt-4 text-xs text-mute">Cancel anytime.</p>
-        <button
-          type="button"
-          onClick={() => signOut({ redirectUrl: "/" })}
-          className="mt-12 text-sm text-paper/50 underline-offset-4 hover:underline"
-        >
-          Sign out
-        </button>
       </div>
     </main>
   );

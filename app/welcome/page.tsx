@@ -11,14 +11,22 @@ function read(key: string): string | null {
   }
 }
 
-// After sign-up: record the 13+ confirmation and carry over the why the
-// athlete found before creating their account.
+// After sign-up: confirm 13+, pick a group username, and carry over the why
+// the athlete found before creating their account.
 export default function Welcome() {
-  const [needsAge, setNeedsAge] = useState(false);
   const [age13, setAge13] = useState(false);
+  const [username, setUsername] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function finish() {
+  // Already ticked on the join screen before sign-up.
+  useEffect(() => {
+    if (read(AGE_CONFIRMED_KEY) === "1") setAge13(true);
+  }, []);
+
+  async function finish(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
     setError(null);
     let why = null;
     try {
@@ -29,33 +37,41 @@ export default function Welcome() {
     const res = await fetch("/api/account/setup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ageConfirmed: true, why }),
+      body: JSON.stringify({ ageConfirmed: true, username, why }),
     }).catch(() => null);
-    if (!res?.ok) {
-      setNeedsAge(true);
-      setError("Couldn't finish setting up. Try again.");
+    const data = (await res?.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+    if (!data?.ok) {
+      setError(data?.error ?? "Couldn't finish setting up. Try again.");
+      setBusy(false);
       return;
     }
     try {
       sessionStorage.removeItem(PENDING_WHY_KEY);
       sessionStorage.removeItem(AGE_CONFIRMED_KEY);
     } catch {}
-    window.location.replace("/coach");
+    window.location.replace("/community");
   }
 
-  useEffect(() => {
-    if (read(AGE_CONFIRMED_KEY) === "1") void finish();
-    else setNeedsAge(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (!needsAge) {
-    return <main className="flex min-h-dvh items-center justify-center text-mute">Setting up…</main>;
-  }
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-24">
-      <div className="rise w-full max-w-md">
-        <h1 className="font-display text-3xl font-bold tracking-tight">One more thing.</h1>
+      <form onSubmit={finish} className="rise w-full max-w-md">
+        <h1 className="font-display text-3xl font-bold tracking-tight">Pick your name for the group.</h1>
+        <p className="mt-4 text-sm leading-relaxed text-mute">
+          This is what other athletes see. Don&rsquo;t use your full name, school, city or birth year.
+        </p>
+        <label className="mt-8 block">
+          <span className="text-xs tracking-[0.2em] text-mute uppercase">Username</span>
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
+            maxLength={20}
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="e.g. beam_focus"
+            className="mt-2 block w-full border-b border-line bg-transparent py-2 text-lg text-paper outline-none placeholder:text-paper/25 focus:border-paper"
+          />
+        </label>
         <label className="mt-8 flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-paper/80">
           <input
             type="checkbox"
@@ -67,17 +83,13 @@ export default function Welcome() {
         </label>
         {error && <p className="mt-6 text-sm text-mute">{error}</p>}
         <button
-          type="button"
-          disabled={!age13}
-          onClick={finish}
+          type="submit"
+          disabled={!age13 || username.length < 3 || busy}
           className="mt-8 w-full border border-paper/40 py-4 text-sm tracking-[0.2em] uppercase transition-colors hover:border-paper hover:bg-paper hover:text-ink disabled:pointer-events-none disabled:opacity-40"
         >
-          Continue
+          {busy ? "Checking…" : "Join the group"}
         </button>
-        <p className="mt-4 text-xs leading-relaxed text-mute">
-          Askesis membership is for athletes 13 and older.
-        </p>
-      </div>
+      </form>
     </main>
   );
 }

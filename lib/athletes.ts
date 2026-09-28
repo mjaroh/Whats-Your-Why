@@ -4,6 +4,8 @@ import { db } from "./db";
 export type Athlete = {
   id: string;
   first_name: string | null;
+  username: string | null;
+  banned_at: Date | null;
   age_confirmed_at: Date | null;
   stripe_customer_id: string | null;
   subscription_status: string | null;
@@ -30,21 +32,35 @@ export function isMember(a: Athlete | null): boolean {
 export async function getAthlete(id: string): Promise<Athlete | null> {
   const sql = await db();
   const [row] = await sql<Athlete[]>`
-    SELECT id, first_name, age_confirmed_at, stripe_customer_id,
+    SELECT id, first_name, username, banned_at, age_confirmed_at, stripe_customer_id,
            subscription_status, current_period_end
     FROM athletes WHERE id = ${id}`;
   return row ?? null;
 }
 
-export async function setupAthlete(id: string, firstName: string | null) {
-  const sql = await db();
-  await sql`
-    INSERT INTO athletes (id, first_name, age_confirmed_at)
-    VALUES (${id}, ${firstName}, now())
-    ON CONFLICT (id) DO UPDATE SET
-      first_name = COALESCE(EXCLUDED.first_name, athletes.first_name),
-      age_confirmed_at = COALESCE(athletes.age_confirmed_at, now())`;
+/** Account is ready once the athlete confirmed 13+ and picked a username. */
+export function isSetUp(a: Athlete | null): boolean {
+  return Boolean(a?.age_confirmed_at && a.username);
 }
+
+/** Throws UsernameTakenError if someone else has the username. */
+export async function setupAthlete(id: string, firstName: string | null, username: string) {
+  const sql = await db();
+  try {
+    await sql`
+      INSERT INTO athletes (id, first_name, username, age_confirmed_at)
+      VALUES (${id}, ${firstName}, ${username}, now())
+      ON CONFLICT (id) DO UPDATE SET
+        first_name = COALESCE(EXCLUDED.first_name, athletes.first_name),
+        username = EXCLUDED.username,
+        age_confirmed_at = COALESCE(athletes.age_confirmed_at, now())`;
+  } catch (err) {
+    if ((err as { code?: string }).code === "23505") throw new UsernameTakenError();
+    throw err;
+  }
+}
+
+export class UsernameTakenError extends Error {}
 
 export async function getWhy(athleteId: string): Promise<Why | null> {
   const sql = await db();

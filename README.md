@@ -1,11 +1,12 @@
 # Askesis
 
 A mobile-first web app. A young athlete answers "What's your why?" and six
-follow-ups from Claude, and gets back a personal purpose statement. That part
-is free.
+follow-ups from Claude, and gets back a personal purpose statement.
 
-Members ($8/month, athletes 13+) get an AI coach that teaches in Michael's
-voice, built on their why: open chat anytime plus a daily check-in.
+With a free account (athletes 13+) they join the **group chat**, where the
+coach posts a daily group check-in. **Members** ($8/month) also get a
+**private coach** that teaches in Michael's voice, built on their why, with its
+own daily check-in.
 
 ## Stack
 
@@ -91,10 +92,15 @@ Someone needs to own checking this table.
 - Rate limits: `/api/why` 40 requests per IP per 10 min, `/api/signup` 5.
   The counters live in Postgres so they hold across serverless instances.
 
-## Membership: coach behind the paywall
+## Accounts, group chat and the paid coach
 
-Membership switches on once the Clerk keys are set. Until then the site stays
+Accounts switch on once the Clerk keys are set. Until then the site stays
 the free Seven Whys plus the parent waitlist.
+
+| | Free account | Member ($8/month) |
+|---|---|---|
+| Group chat + daily group check-in | ✓ | ✓ |
+| Private coach chat + personal daily check-in | | ✓ |
 
 ### Setup
 
@@ -112,26 +118,62 @@ the free Seven Whys plus the parent waitlist.
    its signing secret into `STRIPE_WEBHOOK_SECRET`.
 4. **Customer portal:** in Stripe, open **Settings → Billing → Customer portal**
    and turn it on so members can cancel or update their card.
-5. **Database:** `DATABASE_URL` is required for membership. Tables are
+5. **Database:** `DATABASE_URL` is required for accounts. Tables are
    created automatically.
-6. Redeploy.
+6. **Admins:** set `ADMIN_EMAILS` to Michael's sign-in email (comma
+   separated for more). Admins get **Admin** in the menu.
+7. **Group time zone (optional):** `GROUP_TIMEZONE` sets when the group
+   check-in rolls over. It defaults to `America/New_York`.
+8. Redeploy.
 
 The price ($8/month) lives in `lib/stripe.ts`. No Stripe product setup needed.
+
+### Group chat (`/community`)
+
+- **Names:** athletes post under a username they choose. Rules check its
+  format, and Claude rejects usernames that are crude or give away a real full
+  name, school, city or birth year.
+- **Daily group check-in:** posted by the coach the first time anyone opens the
+  group each day. The coach never replies in the group.
+- **Screening before posting.** A message goes through, in order:
+  1. the crisis keyword screen;
+  2. instant blocks for phone numbers, emails, links, @handles and "add my
+     snap" style invites;
+  3. the crisis classifier and Claude moderation, run together. Moderation
+     blocks bullying, sexual content, contact or meetup requests, personal
+     details, hate, spam and dangerous advice.
+- **When it's blocked or flagged:** blocked messages are never stored, and the
+  athlete sees why. A crisis flag shows the crisis screen and logs an alert.
+- **If moderation is down:** nothing posts (it fails closed).
+- **Reports:** any athlete can report a message. Three reports hide it until
+  an admin decides.
+- **No private messages** between athletes.
+- **Updates:** the chat polls for new messages every 4 seconds while it's open.
+
+### Admin (`/admin`)
+
+For emails in `ADMIN_EMAILS`:
+- **Crisis alerts:** the message and username, with "Mark reviewed".
+- **Reported messages:** "It's fine", "Delete" or "Ban author". A ban hides
+  all of that athlete's messages and stops them posting.
+- **In the chat:** admins can also delete messages or ban authors from each
+  message's ••• menu.
 
 ### Flow
 
 1. The athlete finishes the Seven Whys and taps "Would you like to continue?".
-2. The join screen: they confirm they're 13+, then create an account (Clerk).
-3. `/welcome` saves their why and answers to the account.
-4. `/coach` shows the paywall ($8/month through Stripe Checkout) until
-   they're a member.
-5. Members get the coach:
+2. The join screen: they confirm they're 13+, then tap **Join free** and
+   create an account (Clerk).
+3. `/welcome`: they pick a username. Their why and answers are saved, and they
+   land in the group.
+4. The **Group | Coach** tabs. For free accounts, Coach shows the paywall
+   ($8/month through Stripe Checkout). Members get:
    - their why pinned at the top;
    - one check-in per local day;
    - chat that streams replies.
-6. Signed-in members opening `/` go straight to `/coach`. The menu has
-   "Retake the Seven Whys", "Manage membership" (Stripe portal) and
-   "Sign out".
+5. Signed-in athletes opening `/` go straight to the group. The menu has
+   "Retake the Seven Whys", "Manage membership" (members), "Admin" (admins)
+   and "Sign out".
 
 ### Michael's voice
 
@@ -150,13 +192,16 @@ classifier, which sees the recent conversation. A flag shows the crisis
 screen, doesn't send the message to the coach, and logs it to
 `crisis_events` with the athlete's ID.
 
-### Stored data (members only)
+### Stored data (account holders)
 
 | Table | What |
 |---|---|
 | `athletes` | Clerk user ID, first name, 13+ confirmation time, Stripe customer and subscription status |
 | `whys` | purpose statement and the question/answer pairs |
-| `coach_messages` | chat and check-ins |
+| `coach_messages` | private coach chat and check-ins (members) |
+| `athletes.username`, `banned_at` | group name and ban |
+| `group_messages` | group posts and daily group check-ins (hidden, not deleted, when removed) |
+| `group_reports` | who reported which message |
 
 ## Brand
 

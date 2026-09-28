@@ -15,7 +15,8 @@ function store(key: string, value: string) {
   }
 }
 
-// Screen 4 once membership is live: $8/month coach, athlete account (13+).
+// Screen 4 once accounts are live: a free account joins the group; the
+// private coach is $8/month inside the app. Athletes 13+.
 export function JoinMembership(props: {
   statement: string;
   answers: WhyAnswers;
@@ -36,7 +37,7 @@ export function JoinMembership(props: {
         body: JSON.stringify(why),
       });
       if (!res.ok) throw new Error();
-      window.location.href = "/coach";
+      window.location.href = "/community";
     } catch {
       setError("Couldn't save that. Try again.");
       setStatus("idle");
@@ -56,7 +57,7 @@ export function JoinMembership(props: {
           Take it to your coach.
         </h1>
         <p className="mt-6 leading-relaxed text-paper/70">
-          This replaces the why your coach builds on.
+          This replaces the why saved to your account.
         </p>
         {error && <p className="mt-6 text-sm text-mute">{error}</p>}
         <button type="button" onClick={saveToCoach} disabled={status === "busy"} className={button}>
@@ -73,14 +74,13 @@ export function JoinMembership(props: {
       </h1>
       <div className="mt-6 space-y-3 leading-relaxed text-paper/70">
         <p>
-          Askesis membership is an AI coach that teaches in Michael&rsquo;s voice, built on the
-          why you just found.
+          Join the Askesis group, free: athletes who know their why, with a daily check-in from
+          Michael&rsquo;s coach.
         </p>
         <p>
-          Talk to it before a meet, after a rough practice, whenever you need it. It checks in
-          with you every day.
+          Want more? Your own private coach that teaches in Michael&rsquo;s voice, built on your
+          why, is $8 a month inside the app.
         </p>
-        <p className="text-paper">$8 a month. Cancel anytime.</p>
       </div>
 
       <label className="mt-10 flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-paper/80">
@@ -94,14 +94,14 @@ export function JoinMembership(props: {
       </label>
 
       <button type="button" onClick={createAccount} disabled={!age13} className={button}>
-        Create your account
+        Join free
       </button>
       <p className="mt-4 text-xs leading-relaxed text-mute">
-        Your why and your answers are saved to your account so your coach can build on them.
-        Membership is for athletes 13 and older.
+        Your why and your answers are saved to your account. Askesis is for athletes 13 and
+        older.
       </p>
       <a href="/sign-in" className="mt-10 block text-sm text-paper/60 underline-offset-4 hover:underline">
-        Already a member? Sign in
+        Already have an account? Sign in
       </a>
     </Shell>
   );

@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { getAthlete, saveWhy } from "@/lib/athletes";
+import { getAthlete, isSetUp, saveWhy } from "@/lib/athletes";
 import { WhyBody } from "@/lib/schemas";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ ok: false }, { status: 401 });
   const athlete = await getAthlete(userId);
-  if (!athlete?.age_confirmed_at) return NextResponse.json({ ok: false }, { status: 400 });
+  if (!isSetUp(athlete)) return NextResponse.json({ ok: false }, { status: 400 });
   const parsed = WhyBody.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });
   await saveWhy(userId, parsed.data);
