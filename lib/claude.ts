@@ -8,10 +8,10 @@ import type { ConcernCategory } from "./keywords";
 
 // Server only. The key is read from ANTHROPIC_API_KEY by the SDK and never
 // leaves this process.
-const MODEL = "claude-sonnet-5";
+export const MODEL = "claude-sonnet-5";
 
 let client: Anthropic | null = null;
-function anthropic(): Anthropic {
+export function anthropic(): Anthropic {
   client ??= new Anthropic({ timeout: 30_000, maxRetries: 2 });
   return client;
 }
@@ -91,7 +91,7 @@ export async function classifySafety(history: ChatMessage[]): Promise<ConcernCat
   // read very differently on their own than inside the conversation.
   const transcript = history
     .slice(0, -1)
-    .map((m) => (m.role === "assistant" ? `Q: ${m.content}` : `Athlete: ${m.content}`))
+    .map((m) => (m.role === "assistant" ? `Askesis: ${m.content}` : `Athlete: ${m.content}`))
     .join("\n");
   const latest = history[history.length - 1].content;
   const response = await anthropic().messages.parse({

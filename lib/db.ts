@@ -2,8 +2,9 @@ import "server-only";
 import postgres from "postgres";
 
 // Works with any Postgres (Neon from the Vercel Marketplace, Supabase, ...).
-// Only three things are ever written: waitlist signups, crisis events for
-// human review, and rate-limit counters. Athlete answers are never stored.
+// The free Seven Whys never stores answers. Account holders' whys, group chat
+// posts and (for paying members) coach conversations are stored against their
+// account.
 
 let sql: postgres.Sql | null = null;
 let schemaReady: Promise<void> | null = null;
@@ -47,6 +48,63 @@ async function ensureSchema(sql: postgres.Sql) {
       message TEXT NOT NULL,
       ip_hash TEXT,
       reviewed_at TIMESTAMPTZ
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS athletes (
+      id TEXT PRIMARY KEY,
+      first_name TEXT,
+      age_confirmed_at TIMESTAMPTZ,
+      stripe_customer_id TEXT UNIQUE,
+      subscription_id TEXT,
+      subscription_status TEXT,
+      current_period_end TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS whys (
+      athlete_id TEXT PRIMARY KEY REFERENCES athletes(id) ON DELETE CASCADE,
+      statement TEXT NOT NULL,
+      answers JSONB NOT NULL DEFAULT '[]',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS coach_messages (
+      id BIGSERIAL PRIMARY KEY,
+      athlete_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'chat',
+      checkin_date DATE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`CREATE INDEX IF NOT EXISTS coach_messages_athlete ON coach_messages (athlete_id, id)`;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS coach_messages_one_checkin
+    ON coach_messages (athlete_id, checkin_date) WHERE checkin_date IS NOT NULL`;
+  await sql`ALTER TABLE crisis_events ADD COLUMN IF NOT EXISTS athlete_id TEXT`;
+  await sql`ALTER TABLE athletes ADD COLUMN IF NOT EXISTS username TEXT`;
+  await sql`ALTER TABLE athletes ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ`;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS athletes_username
+    ON athletes (lower(username)) WHERE username IS NOT NULL`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS group_messages (
+      id BIGSERIAL PRIMARY KEY,
+      athlete_id TEXT REFERENCES athletes(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL DEFAULT 'chat',
+      content TEXT NOT NULL,
+      checkin_date DATE UNIQUE,
+      hidden_at TIMESTAMPTZ,
+      hidden_reason TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS group_reports (
+      message_id BIGINT NOT NULL REFERENCES group_messages(id) ON DELETE CASCADE,
+      reporter_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+      resolved_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (message_id, reporter_id)
     )`;
   await sql`
     CREATE TABLE IF NOT EXISTS rate_limits (

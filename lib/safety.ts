@@ -10,11 +10,13 @@ export type CrisisSource = "keyword" | "classifier" | "model";
 export async function logCrisisEvent(event: {
   source: CrisisSource;
   category: string | null;
-  questionNumber: number | "final";
+  /** Seven Whys question number, or null for the coach. */
+  questionNumber: number | "final" | null;
   message: string;
   ipHash: string;
+  athleteId?: string;
 }) {
-  const qn = event.questionNumber === "final" ? null : event.questionNumber;
+  const qn = typeof event.questionNumber === "number" ? event.questionNumber : null;
   // Vercel log line without the message text, so logs stay free of content.
   console.warn(
     JSON.stringify({
@@ -22,6 +24,7 @@ export async function logCrisisEvent(event: {
       source: event.source,
       category: event.category,
       questionNumber: event.questionNumber,
+      coach: Boolean(event.athleteId),
       at: new Date().toISOString(),
     }),
   );
@@ -32,8 +35,9 @@ export async function logCrisisEvent(event: {
   try {
     const sql = await db();
     await sql`
-      INSERT INTO crisis_events (source, category, question_number, message, ip_hash)
-      VALUES (${event.source}, ${event.category}, ${qn}, ${event.message}, ${event.ipHash})`;
+      INSERT INTO crisis_events (source, category, question_number, message, ip_hash, athlete_id)
+      VALUES (${event.source}, ${event.category}, ${qn}, ${event.message}, ${event.ipHash},
+              ${event.athleteId ?? null})`;
   } catch (err) {
     console.error("failed to persist crisis event", err);
   }

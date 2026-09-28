@@ -9,13 +9,23 @@ import {
 } from "@/lib/constants";
 import { ProgressDots } from "./ProgressDots";
 import { Continue } from "./Continue";
+import { JoinMembership, type WhyAnswers } from "./JoinMembership";
 import { Crisis } from "./Crisis";
 
 type Phase = "ask" | "result" | "continue" | "crisis";
 
-// The conversation lives only in this component's memory. Nothing is
-// persisted in the browser or on the server.
-export function SevenWhys() {
+// The conversation lives only in this component's memory. Nothing is stored
+// unless the athlete creates an account (or is signed in) and chooses to keep
+// their why for the coach.
+export function SevenWhys({
+  membership = false,
+  signedIn = false,
+}: {
+  /** Accounts and the paid coach are switched on. */
+  membership?: boolean;
+  /** Already a member retaking the exercise. */
+  signedIn?: boolean;
+}) {
   const [phase, setPhase] = useState<Phase>("ask");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: FIRST_QUESTION },
@@ -25,6 +35,7 @@ export function SevenWhys() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statement, setStatement] = useState("");
+  const [answers, setAnswers] = useState<WhyAnswers>([]);
 
   const submit = useCallback(async () => {
     const answer = draft.trim();
@@ -55,6 +66,7 @@ export function SevenWhys() {
         setAnswered(data.answered);
         break;
       case "final":
+        setAnswers(pairAnswers(history));
         setAnswered(data.answered);
         setStatement(data.text);
         setPhase("result");
@@ -74,7 +86,13 @@ export function SevenWhys() {
   }, [draft, pending, messages, answered]);
 
   if (phase === "crisis") return <Crisis />;
-  if (phase === "continue") return <Continue />;
+  if (phase === "continue") {
+    return membership ? (
+      <JoinMembership statement={statement} answers={answers} signedIn={signedIn} />
+    ) : (
+      <Continue />
+    );
+  }
   if (phase === "result") {
     return <Result statement={statement} onContinue={() => setPhase("continue")} />;
   }
@@ -93,6 +111,18 @@ export function SevenWhys() {
   ) : (
     <Landing draft={draft} setDraft={setDraft} onSubmit={submit} error={error} />
   );
+}
+
+/** Question/answer pairs, in order, for the coach to build on. */
+function pairAnswers(history: ChatMessage[]): WhyAnswers {
+  const out: WhyAnswers = [];
+  history.forEach((m, i) => {
+    const next = history[i + 1];
+    if (m.role === "assistant" && next?.role === "user") {
+      out.push({ question: m.content, answer: next.content });
+    }
+  });
+  return out;
 }
 
 /* ---------- Screen 1: Landing ---------- */
