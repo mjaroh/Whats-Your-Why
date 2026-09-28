@@ -1,6 +1,7 @@
 // Shown when a message suggests self-harm, suicide, abuse or danger.
-// The exercise stops here; there is no way back into it from this screen.
-export function Crisis() {
+// The Seven Whys stops here for good. In the coach, `onBack` lets the athlete
+// return once they've seen the resources.
+export function Crisis({ onBack }: { onBack?: () => void } = {}) {
   const link =
     "block border border-paper/30 px-5 py-4 transition-colors hover:border-paper";
   return (
@@ -36,6 +37,15 @@ export function Crisis() {
         <p className="mt-10 text-sm text-mute">
           If you or someone else is in immediate danger, call 911.
         </p>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-10 text-sm text-paper/60 underline-offset-4 hover:underline"
+          >
+            Back to your coach
+          </button>
+        )}
       </div>
     </main>
   );

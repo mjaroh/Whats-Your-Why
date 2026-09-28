@@ -1,8 +1,11 @@
-# Askesis: Seven Whys (v1)
+# Askesis
 
-A single-page, mobile-first web app. A young athlete answers "What's your why?"
-and six follow-ups from Claude. They get back a personal purpose statement,
-and a parent can join the membership waitlist.
+A mobile-first web app. A young athlete answers "What's your why?" and six
+follow-ups from Claude, and gets back a personal purpose statement. That part
+is free.
+
+Members ($8/month, athletes 13+) get an AI coach that teaches in Michael's
+voice, built on their why: open chat anytime plus a daily check-in.
 
 ## Stack
 
@@ -77,8 +80,9 @@ Someone needs to own checking this table.
 
 ### Data
 
-- Athlete answers and the purpose statement are **never stored**. They live in
-  React state only and are gone on refresh.
+- In the free exercise, athlete answers and the purpose statement are **never
+  stored**. They live in React state only and are gone on refresh. They're
+  saved only if the athlete creates a membership account.
 - **One exception:** the single message that triggered a crisis stop is saved in
   `crisis_events` so a human can review it. Nothing else from that
   conversation is saved.
@@ -86,6 +90,73 @@ Someone needs to own checking this table.
 - IPs are stored only as salted hashes, for rate limiting.
 - Rate limits: `/api/why` 40 requests per IP per 10 min, `/api/signup` 5.
   The counters live in Postgres so they hold across serverless instances.
+
+## Membership: coach behind the paywall
+
+Membership switches on once the Clerk keys are set. Until then the site stays
+the free Seven Whys plus the parent waitlist.
+
+### Setup
+
+1. **Sign-in (Clerk):** in Vercel, open **Integrations → Browse Marketplace →
+   Clerk** and connect it to this project. It adds
+   `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`. In the Clerk
+   dashboard, turn on **First name** under User & Authentication so the coach
+   knows the athlete's name.
+2. **Payments (Stripe):** create a Stripe account. Add `STRIPE_SECRET_KEY` to
+   Vercel (use a test key `sk_test_…` first).
+3. **Stripe webhook:** in Stripe, open **Developers → Webhooks → Add endpoint**
+   `https://<your-domain>/api/billing/webhook` with events
+   `checkout.session.completed`, `customer.subscription.created`,
+   `customer.subscription.updated` and `customer.subscription.deleted`. Copy
+   its signing secret into `STRIPE_WEBHOOK_SECRET`.
+4. **Customer portal:** in Stripe, open **Settings → Billing → Customer portal**
+   and turn it on so members can cancel or update their card.
+5. **Database:** `DATABASE_URL` is required for membership. Tables are
+   created automatically.
+6. Redeploy.
+
+The price ($8/month) lives in `lib/stripe.ts`. No Stripe product setup needed.
+
+### Flow
+
+1. The athlete finishes the Seven Whys and taps "Would you like to continue?".
+2. The join screen: they confirm they're 13+, then create an account (Clerk).
+3. `/welcome` saves their why and answers to the account.
+4. `/coach` shows the paywall ($8/month through Stripe Checkout) until
+   they're a member.
+5. Members get the coach:
+   - their why pinned at the top;
+   - one check-in per local day;
+   - chat that streams replies.
+6. Signed-in members opening `/` go straight to `/coach`. The menu has
+   "Retake the Seven Whys", "Manage membership" (Stripe portal) and
+   "Sign out".
+
+### Michael's voice
+
+`lib/coach/voice.ts` is a **placeholder**. Replace it with a guide built from
+Michael's own content. Everything the coach knows about how he talks and what
+he teaches comes from that file. The coaching rules and boundaries live in
+`lib/coach/prompt.ts`:
+- no medical, nutrition or weight advice;
+- it's an AI, not Michael;
+- crisis handling.
+
+### Coach safety
+
+Every coach message goes through the same keyword screen and the Claude
+classifier, which sees the recent conversation. A flag shows the crisis
+screen, doesn't send the message to the coach, and logs it to
+`crisis_events` with the athlete's ID.
+
+### Stored data (members only)
+
+| Table | What |
+|---|---|
+| `athletes` | Clerk user ID, first name, 13+ confirmation time, Stripe customer and subscription status |
+| `whys` | purpose statement and the question/answer pairs |
+| `coach_messages` | chat and check-ins |
 
 ## Brand
 

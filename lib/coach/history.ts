@@ -1,0 +1,23 @@
+import type Anthropic from "@anthropic-ai/sdk";
+
+type StoredMessage = { role: "user" | "assistant"; content: string; kind: "chat" | "checkin" };
+
+/**
+ * Stored history → API turns. The API needs the first turn to be the user's
+ * and roles to alternate, so a kickoff turn is added when a check-in comes
+ * first and back-to-back turns from the same side are merged.
+ */
+export function toApiMessages(history: StoredMessage[], latest: string): Anthropic.MessageParam[] {
+  const turns: { role: "user" | "assistant"; text: string }[] = [];
+  const push = (role: "user" | "assistant", text: string) => {
+    const last = turns[turns.length - 1];
+    if (last && last.role === role) last.text += `\n\n${text}`;
+    else turns.push({ role, text });
+  };
+  for (const m of history) {
+    push(m.role, m.kind === "checkin" ? `[Daily check-in] ${m.content}` : m.content);
+  }
+  push("user", latest);
+  if (turns[0].role === "assistant") turns.unshift({ role: "user", text: "[Athlete opened the coach.]" });
+  return turns.map((t) => ({ role: t.role, content: t.text }));
+}
