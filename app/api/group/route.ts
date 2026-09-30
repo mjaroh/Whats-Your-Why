@@ -7,6 +7,7 @@ import { generateGroupCheckin } from "@/lib/coach/claude";
 import { localDay } from "@/lib/coach/time";
 import {
   addGroupCheckin,
+  approvedSince,
   groupMessages,
   hasGroupCheckin,
   postGroupMessage,
@@ -33,10 +34,12 @@ function toClient(m: GroupMessage, me: string) {
   return {
     id: m.id,
     username: m.username,
+    hasAvatar: m.has_avatar,
     kind: m.kind,
     content: m.content,
+    mediaId: m.media_id,
+    approved: m.approved,
     mine: m.athlete_id === me,
-    at: m.created_at,
   };
 }
 
@@ -52,6 +55,7 @@ async function ensureCheckin() {
 }
 
 // Poll for new messages: ?after=<last id>&since=<oldest id on screen>
+// &approvedAfter=<serverTime from the last poll> (videos approved since then)
 export async function GET(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
@@ -62,12 +66,20 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const after = Number(url.searchParams.get("after")) || 0;
   const since = Number(url.searchParams.get("since")) || after;
-  const [messages, hidden] = await Promise.all([
-    groupMessages({ after, limit: 100 }),
+  const approvedParam = url.searchParams.get("approvedAfter");
+  const approvedAfter = approvedParam && !Number.isNaN(Date.parse(approvedParam)) ? approvedParam : null;
+  const serverTime = new Date();
+  const [messages, hidden, approved] = await Promise.all([
+    groupMessages({ after, limit: 100, viewer: userId }),
     since ? recentlyHidden(since) : Promise.resolve([]),
+    approvedAfter ? approvedSince(new Date(approvedAfter)) : Promise.resolve([]),
   ]);
   return NextResponse.json(
-    { messages: messages.map((m) => toClient(m, userId)), hidden },
+    {
+      messages: [...messages, ...approved].map((m) => toClient(m, userId)),
+      hidden,
+      serverTime: serverTime.toISOString(),
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

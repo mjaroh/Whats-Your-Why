@@ -6,12 +6,25 @@ import { toApiMessages } from "./history";
 import { checkinPrompt, coachSystemPrompt, groupCheckinPrompt } from "./prompt";
 import { VOICE_GUIDE } from "./voice";
 
+/** A new athlete turn: plain text, or text plus images (video frames). */
+export type AthleteTurn = string | Anthropic.ContentBlockParam[];
+
 export function streamCoachReply(opts: {
   firstName: string | null;
   why: Why | null;
   history: CoachMessage[];
-  message: string;
+  message: AthleteTurn;
 }) {
+  let messages: Anthropic.MessageParam[];
+  if (typeof opts.message === "string") {
+    messages = toApiMessages(opts.history, opts.message);
+  } else {
+    // Build turns with an empty latest message, then attach the blocks to it.
+    messages = toApiMessages(opts.history, "");
+    const last = messages[messages.length - 1];
+    const carried = typeof last.content === "string" ? last.content.trim() : "";
+    last.content = [...(carried ? [{ type: "text" as const, text: carried }] : []), ...opts.message];
+  }
   return anthropic().messages.stream({
     model: MODEL,
     max_tokens: 4000,
@@ -22,7 +35,7 @@ export function streamCoachReply(opts: {
         cache_control: { type: "ephemeral" },
       },
     ],
-    messages: toApiMessages(opts.history, opts.message),
+    messages,
     output_config: { effort: "low" },
   });
 }

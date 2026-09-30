@@ -150,6 +150,37 @@ The price ($8/month) lives in `lib/stripe.ts`. No Stripe product setup needed.
 - **No private messages** between athletes.
 - **Updates:** the chat polls for new messages every 4 seconds while it's open.
 
+### Videos, profile photos and the profile (`/profile`)
+
+Needs a **private** Vercel Blob store connected to the project. In Vercel, open
+**Storage → Create → Blob**, choose **Private**, and connect it. Until then the
+video and photo buttons are hidden.
+
+- **Videos (up to 90 seconds):** the phone pulls 10 still frames from the video
+  and uploads the video straight to private Blob storage. The app reserves the
+  storage path first, and an athlete can only upload to their own reserved
+  path.
+- **Coach videos (members only):** Claude looks at the frames and streams
+  feedback in Michael's voice. It only describes what it can see, never
+  comments on bodies, and sends new or harder skills back to their coach.
+  Limit: 10 a day.
+- **Group videos:**
+  - Claude screens the frames (and any caption) for anything sexual,
+    identifying, dangerous or hateful. A blocked video is deleted right away.
+  - Anything that passes waits in **Admin → Videos waiting for approval**. Only
+    the author sees it ("Waiting for approval") until an admin approves it.
+  - Limit: 5 a day.
+- **Watching:** every play goes through `/api/media/[id]`, which checks who is
+  asking, then redirects to a private link that expires in 10 minutes.
+- **Profile photos:** shown next to group messages. Each photo is resized on
+  the phone and checked by Claude before it's saved. Admins can remove a photo
+  from the message menu.
+- **Profile page:** private to the athlete:
+  - their photo and username;
+  - a **Why statement** button that opens their why;
+  - their coach videos with the feedback on each;
+  - messages they saved with ☆ from their coach or the group.
+
 ### Admin (`/admin`)
 
 For emails in `ADMIN_EMAILS`:
@@ -202,6 +233,9 @@ screen, doesn't send the message to the coach, and logs it to
 | `athletes.username`, `banned_at` | group name and ban |
 | `group_messages` | group posts and daily group check-ins (hidden, not deleted, when removed) |
 | `group_reports` | who reported which message |
+| `media` | video uploads: owner, purpose, private storage path, poster frame, status |
+| `favorites` | messages an athlete saved to their profile |
+| `athletes.avatar_pathname` | private storage path of their profile photo |
 
 ## Brand
 

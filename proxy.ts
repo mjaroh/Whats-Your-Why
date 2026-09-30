@@ -5,8 +5,13 @@ import { clerkEnabled } from "@/lib/clerk";
 const isMemberRoute = createRouteMatcher([
   "/coach(.*)",
   "/community(.*)",
+  "/profile(.*)",
   "/admin(.*)",
   "/api/group(.*)",
+  "/api/media(.*)",
+  "/api/avatar(.*)",
+  "/api/profile(.*)",
+  "/api/favorites(.*)",
   "/api/admin(.*)",
   "/welcome(.*)",
   "/api/coach(.*)",

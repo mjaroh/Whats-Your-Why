@@ -6,6 +6,7 @@ export type Athlete = {
   first_name: string | null;
   username: string | null;
   banned_at: Date | null;
+  avatar_pathname: string | null;
   age_confirmed_at: Date | null;
   stripe_customer_id: string | null;
   subscription_status: string | null;
@@ -22,6 +23,7 @@ export type CoachMessage = {
   role: "user" | "assistant";
   content: string;
   kind: "chat" | "checkin";
+  media_id: number | null;
   created_at: Date;
 };
 
@@ -32,7 +34,7 @@ export function isMember(a: Athlete | null): boolean {
 export async function getAthlete(id: string): Promise<Athlete | null> {
   const sql = await db();
   const [row] = await sql<Athlete[]>`
-    SELECT id, first_name, username, banned_at, age_confirmed_at, stripe_customer_id,
+    SELECT id, first_name, username, banned_at, avatar_pathname, age_confirmed_at, stripe_customer_id,
            subscription_status, current_period_end
     FROM athletes WHERE id = ${id}`;
   return row ?? null;
@@ -81,7 +83,7 @@ export async function saveWhy(athleteId: string, why: Why) {
 export async function recentMessages(athleteId: string, limit = 40): Promise<CoachMessage[]> {
   const sql = await db();
   const rows = await sql<CoachMessage[]>`
-    SELECT id::int AS id, role, content, kind, created_at
+    SELECT id::int AS id, role, content, kind, media_id::int AS media_id, created_at
     FROM coach_messages WHERE athlete_id = ${athleteId}
     ORDER BY id DESC LIMIT ${limit}`;
   return rows.reverse();
@@ -92,22 +94,26 @@ export async function addMessage(
   role: "user" | "assistant",
   content: string,
   kind: "chat" | "checkin" = "chat",
-) {
+  mediaId: number | null = null,
+): Promise<number> {
   const sql = await db();
-  await sql`
-    INSERT INTO coach_messages (athlete_id, role, content, kind)
-    VALUES (${athleteId}, ${role}, ${content}, ${kind})`;
+  const [row] = await sql<{ id: number }[]>`
+    INSERT INTO coach_messages (athlete_id, role, content, kind, media_id)
+    VALUES (${athleteId}, ${role}, ${content}, ${kind}, ${mediaId})
+    RETURNING id::int AS id`;
+  return row.id;
 }
 
 /** Stores today's check-in once; returns false if one already exists for that date. */
+/** Stores today's check-in once; returns its id, or null if one already exists. */
 export async function addCheckin(athleteId: string, content: string, localDate: string) {
   const sql = await db();
-  const rows = await sql`
+  const rows = await sql<{ id: number }[]>`
     INSERT INTO coach_messages (athlete_id, role, content, kind, checkin_date)
     VALUES (${athleteId}, 'assistant', ${content}, 'checkin', ${localDate})
     ON CONFLICT (athlete_id, checkin_date) WHERE checkin_date IS NOT NULL DO NOTHING
-    RETURNING id`;
-  return rows.length > 0;
+    RETURNING id::int AS id`;
+  return rows[0]?.id ?? null;
 }
 
 export async function hasCheckin(athleteId: string, localDate: string) {

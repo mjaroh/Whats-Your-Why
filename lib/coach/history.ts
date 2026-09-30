@@ -1,6 +1,18 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
-type StoredMessage = { role: "user" | "assistant"; content: string; kind: "chat" | "checkin" };
+type StoredMessage = {
+  role: "user" | "assistant";
+  content: string;
+  kind: "chat" | "checkin";
+  media_id?: number | null;
+};
+
+/** How a stored message reads to the model (past videos appear as a note, not frames). */
+function asText(m: StoredMessage): string {
+  if (m.kind === "checkin") return `[Daily check-in] ${m.content}`;
+  if (m.media_id) return m.content ? `[Sent a video] ${m.content}` : "[Sent a video]";
+  return m.content;
+}
 
 /**
  * Stored history → API turns. The API needs the first turn to be the user's
@@ -15,7 +27,7 @@ export function toApiMessages(history: StoredMessage[], latest: string): Anthrop
     else turns.push({ role, text });
   };
   for (const m of history) {
-    push(m.role, m.kind === "checkin" ? `[Daily check-in] ${m.content}` : m.content);
+    push(m.role, asText(m));
   }
   push("user", latest);
   if (turns[0].role === "assistant") turns.unshift({ role: "user", text: "[Athlete opened the coach.]" });

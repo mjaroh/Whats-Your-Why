@@ -99,6 +99,31 @@ async function ensureSchema(sql: postgres.Sql) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
   await sql`
+    CREATE TABLE IF NOT EXISTS media (
+      id BIGSERIAL PRIMARY KEY,
+      athlete_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+      purpose TEXT NOT NULL,
+      pathname TEXT NOT NULL UNIQUE,
+      poster_pathname TEXT,
+      content_type TEXT NOT NULL,
+      duration_s REAL,
+      status TEXT NOT NULL DEFAULT 'uploading',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`ALTER TABLE coach_messages ADD COLUMN IF NOT EXISTS media_id BIGINT REFERENCES media(id)`;
+  await sql`ALTER TABLE group_messages ADD COLUMN IF NOT EXISTS media_id BIGINT REFERENCES media(id)`;
+  // Text posts are approved on insert; group videos wait for an admin.
+  await sql`ALTER TABLE group_messages ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ DEFAULT now()`;
+  await sql`ALTER TABLE athletes ADD COLUMN IF NOT EXISTS avatar_pathname TEXT`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS favorites (
+      athlete_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+      source TEXT NOT NULL,
+      message_id BIGINT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (athlete_id, source, message_id)
+    )`;
+  await sql`
     CREATE TABLE IF NOT EXISTS group_reports (
       message_id BIGINT NOT NULL REFERENCES group_messages(id) ON DELETE CASCADE,
       reporter_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
