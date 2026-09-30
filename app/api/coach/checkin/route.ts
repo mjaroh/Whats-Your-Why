@@ -37,8 +37,8 @@ export async function POST(req: Request) {
       weekday,
       recentCheckins,
     });
-    const created = await addCheckin(userId, text, date);
-    return NextResponse.json(created ? { created: true, text } : { created: false });
+    const id = await addCheckin(userId, text, date);
+    return NextResponse.json(id ? { created: true, id, text } : { created: false });
   } catch (err) {
     console.error("check-in failed", err);
     return NextResponse.json({ created: false }, { status: 502 });

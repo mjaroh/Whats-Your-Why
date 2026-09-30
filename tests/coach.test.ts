@@ -38,3 +38,14 @@ test("a first message from the athlete needs no kickoff turn", () => {
   const out = toApiMessages([], "Hey coach");
   assert.deepEqual(out, [{ role: "user", content: "Hey coach" }]);
 });
+
+test("past videos appear to the coach as a note", () => {
+  const out = toApiMessages(
+    [
+      { role: "user", content: "my back handspring", kind: "chat", media_id: 7 },
+      { role: "assistant", content: "Nice lines.", kind: "chat" },
+    ],
+    "thanks",
+  );
+  assert.equal(out[0].content, "[Sent a video] my back handspring");
+});

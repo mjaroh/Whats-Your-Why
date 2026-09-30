@@ -4,7 +4,9 @@ import { Coach } from "@/components/Coach";
 import { Paywall } from "@/components/Paywall";
 import { isAdmin } from "@/lib/admin";
 import { getAthlete, getWhy, isMember, isSetUp, recentMessages } from "@/lib/athletes";
+import { blobEnabled } from "@/lib/blob";
 import { clerkEnabled } from "@/lib/clerk";
+import { favoriteIds } from "@/lib/media";
 import { PRICE_LABEL, stripeEnabled, syncCheckoutSession } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
@@ -42,13 +44,21 @@ export default async function CoachPage({
     );
   }
 
-  const messages = await recentMessages(userId, 60);
+  const [messages, saved] = await Promise.all([recentMessages(userId, 60), favoriteIds(userId, "coach")]);
   return (
     <Coach
       firstName={athlete!.first_name}
       admin={admin}
       statement={why?.statement ?? null}
-      initialMessages={messages.map((m) => ({ id: m.id, role: m.role, content: m.content, kind: m.kind }))}
+      videoEnabled={blobEnabled()}
+      savedIds={saved}
+      initialMessages={messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        kind: m.kind,
+        mediaId: m.media_id,
+      }))}
     />
   );
 }

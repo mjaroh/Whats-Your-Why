@@ -5,22 +5,43 @@ export type GroupMessage = {
   id: number;
   athlete_id: string | null;
   username: string | null;
+  has_avatar: boolean;
   kind: "chat" | "checkin";
   content: string;
+  media_id: number | null;
+  approved: boolean;
   created_at: Date;
 };
+
+const MESSAGE_COLUMNS = `m.id::int AS id, m.athlete_id, a.username, (a.avatar_pathname IS NOT NULL) AS has_avatar,
+  m.kind, m.content, m.media_id::int AS media_id, (m.approved_at IS NOT NULL) AS approved, m.created_at`;
 
 /** A message is hidden once this many different athletes report it. */
 export const AUTO_HIDE_REPORTS = 3;
 
-export async function groupMessages(opts: { after?: number; limit?: number } = {}) {
+/**
+ * Visible messages: approved and not removed. A viewer also sees their own
+ * videos while they wait for approval.
+ */
+export async function groupMessages(opts: { after?: number; limit?: number; viewer?: string } = {}) {
   const sql = await db();
   const rows = await sql<GroupMessage[]>`
-    SELECT m.id::int AS id, m.athlete_id, a.username, m.kind, m.content, m.created_at
+    SELECT ${sql.unsafe(MESSAGE_COLUMNS)}
     FROM group_messages m LEFT JOIN athletes a ON a.id = m.athlete_id
     WHERE m.hidden_at IS NULL AND m.id > ${opts.after ?? 0}
+      AND (m.approved_at IS NOT NULL OR m.athlete_id = ${opts.viewer ?? ""})
     ORDER BY m.id DESC LIMIT ${opts.limit ?? 100}`;
   return rows.reverse();
+}
+
+/** Videos approved since a poll, so they show up for people already in the chat. */
+export async function approvedSince(since: Date) {
+  const sql = await db();
+  return sql<GroupMessage[]>`
+    SELECT ${sql.unsafe(MESSAGE_COLUMNS)}
+    FROM group_messages m LEFT JOIN athletes a ON a.id = m.athlete_id
+    WHERE m.hidden_at IS NULL AND m.media_id IS NOT NULL AND m.approved_at > ${since}
+    ORDER BY m.id`;
 }
 
 /** Ids among recent messages that have been hidden since they were loaded. */
@@ -32,20 +53,26 @@ export async function recentlyHidden(sinceId: number): Promise<number[]> {
   return rows.map((r) => r.id);
 }
 
-export async function postGroupMessage(athleteId: string, content: string): Promise<GroupMessage> {
+/** Text posts go live at once; a video waits for an admin (approved_at NULL). */
+export async function postGroupMessage(
+  athleteId: string,
+  content: string,
+  mediaId: number | null = null,
+): Promise<GroupMessage> {
   const sql = await db();
+  const approvedAt = mediaId ? null : new Date();
   const [row] = await sql<GroupMessage[]>`
     WITH m AS (
-      INSERT INTO group_messages (athlete_id, content) VALUES (${athleteId}, ${content})
-      RETURNING id, athlete_id, kind, content, created_at
+      INSERT INTO group_messages (athlete_id, content, media_id, approved_at)
+      VALUES (${athleteId}, ${content}, ${mediaId}, ${approvedAt})
+      RETURNING *
     )
-    SELECT m.id::int AS id, m.athlete_id, a.username, m.kind, m.content, m.created_at
-    FROM m LEFT JOIN athletes a ON a.id = m.athlete_id`;
+    SELECT ${sql.unsafe(MESSAGE_COLUMNS)} FROM m LEFT JOIN athletes a ON a.id = m.athlete_id`;
   return row;
 }
 
 export async function recentForContext(limit = 8) {
-  const msgs = await groupMessages({ limit });
+  const msgs = (await groupMessages({ limit })).filter((m) => m.content);
   return msgs.map((m) => ({ username: m.username ?? "Askesis", content: m.content }));
 }
 
@@ -128,6 +155,44 @@ export async function authorOf(messageId: number): Promise<string | null> {
   const [row] = await sql<{ athlete_id: string | null }[]>`
     SELECT athlete_id FROM group_messages WHERE id = ${messageId}`;
   return row?.athlete_id ?? null;
+}
+
+export type PendingVideo = {
+  id: number;
+  media_id: number;
+  username: string | null;
+  content: string;
+  created_at: Date;
+};
+
+export async function pendingVideos(): Promise<PendingVideo[]> {
+  const sql = await db();
+  return sql<PendingVideo[]>`
+    SELECT m.id::int AS id, m.media_id::int AS media_id, a.username, m.content, m.created_at
+    FROM group_messages m LEFT JOIN athletes a ON a.id = m.athlete_id
+    WHERE m.media_id IS NOT NULL AND m.approved_at IS NULL AND m.hidden_at IS NULL
+    ORDER BY m.id`;
+}
+
+export async function approveVideo(messageId: number) {
+  const sql = await db();
+  await sql`
+    UPDATE group_messages SET approved_at = now()
+    WHERE id = ${messageId} AND media_id IS NOT NULL AND approved_at IS NULL AND hidden_at IS NULL`;
+}
+
+/** Rejecting (or deleting) a video post also returns its files so they can be removed. */
+export async function hideWithMedia(messageId: number, reason: string): Promise<(string | null)[]> {
+  const sql = await db();
+  await sql`
+    UPDATE group_messages SET hidden_at = now(), hidden_reason = ${reason}
+    WHERE id = ${messageId}`;
+  await sql`UPDATE group_reports SET resolved_at = now() WHERE message_id = ${messageId}`;
+  const [media] = await sql<{ pathname: string; poster_pathname: string | null }[]>`
+    UPDATE media SET status = 'rejected'
+    WHERE id = (SELECT media_id FROM group_messages WHERE id = ${messageId})
+    RETURNING pathname, poster_pathname`;
+  return media ? [media.pathname, media.poster_pathname] : [];
 }
 
 /** Bans the account and hides everything it posted. */

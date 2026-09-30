@@ -1,14 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { prepareAndUpload, stageLabel, UserFacingError, type SendStage } from "@/lib/client/media";
+import { REPLY_ID_MARKER } from "@/lib/constants";
 import { AppNav } from "./AppNav";
 import { Crisis } from "./Crisis";
+import { SaveStar, VideoButton, VideoPlayer } from "./MediaBits";
 
+// Numeric ids are saved messages; string ids are still arriving.
 type Msg = {
   id: number | string;
   role: "user" | "assistant";
   content: string;
   kind: "chat" | "checkin";
+  mediaId?: number | null;
 };
 
 export function Coach(props: {
@@ -16,6 +21,8 @@ export function Coach(props: {
   statement: string | null;
   initialMessages: Msg[];
   admin: boolean;
+  videoEnabled: boolean;
+  savedIds: number[];
 }) {
   const [messages, setMessages] = useState<Msg[]>(props.initialMessages);
   const [draft, setDraft] = useState("");
@@ -23,6 +30,8 @@ export function Coach(props: {
   const [checkingIn, setCheckingIn] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [crisis, setCrisis] = useState(false);
+  const [stage, setStage] = useState<SendStage | null>(null);
+  const [saved, setSaved] = useState<Set<number>>(() => new Set(props.savedIds));
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Today's check-in, created once per local day.
@@ -34,11 +43,11 @@ export function Coach(props: {
       body: JSON.stringify({ tz }),
     })
       .then((r) => r.json())
-      .then((data: { created?: boolean; text?: string }) => {
+      .then((data: { created?: boolean; id?: number; text?: string }) => {
         if (data.created && data.text) {
           setMessages((m) => [
             ...m,
-            { id: `checkin-${Date.now()}`, role: "assistant", content: data.text!, kind: "checkin" },
+            { id: data.id ?? `checkin-${Date.now()}`, role: "assistant", content: data.text!, kind: "checkin" },
           ]);
         }
       })
@@ -50,22 +59,21 @@ export function Coach(props: {
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
 
-  const send = useCallback(async () => {
-    const text = draft.trim();
-    if (!text || pending) return;
-    const userMsg: Msg = { id: `u-${Date.now()}`, role: "user", content: text, kind: "chat" };
+  /**
+   * Sends one athlete turn (text, or a finished video upload) and streams the
+   * coach's reply in. The stream ends with the reply's saved id.
+   */
+  async function exchange(opts: {
+    userMsg: Msg;
+    request: () => Promise<Response>;
+    onFail: () => void;
+  }) {
     const replyId = `a-${Date.now()}`;
-    setMessages((m) => [...m, userMsg]);
-    setDraft("");
+    setMessages((m) => [...m, opts.userMsg]);
     setError(null);
     setPending(true);
-
     try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
-      });
+      const res = await opts.request();
       const type = res.headers.get("content-type") ?? "";
       if (type.includes("application/json")) {
         const data = (await res.json()) as { type?: string; error?: string };
@@ -76,27 +84,87 @@ export function Coach(props: {
         throw new Error(data.error ?? "Something went wrong.");
       }
       if (!res.body) throw new Error("Something went wrong.");
+      const userId = Number(res.headers.get("x-user-message-id")) || opts.userMsg.id;
 
-      // Stream the reply in as it's written.
-      setMessages((m) => [...m, { id: replyId, role: "assistant", content: "", kind: "chat" }]);
+      setMessages((m) => [
+        ...m.map((msg) => (msg.id === opts.userMsg.id ? { ...msg, id: userId } : msg)),
+        { id: replyId, role: "assistant", content: "", kind: "chat" },
+      ]);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let raw = "";
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setMessages((m) =>
-          m.map((msg) => (msg.id === replyId ? { ...msg, content: msg.content + chunk } : msg)),
-        );
+        raw += decoder.decode(value, { stream: true });
+        const shown = raw.split(REPLY_ID_MARKER)[0];
+        setMessages((m) => m.map((msg) => (msg.id === replyId ? { ...msg, content: shown } : msg)));
       }
+      const [, meta] = raw.split(REPLY_ID_MARKER);
+      const savedId = meta ? (JSON.parse(meta) as { id?: number }).id : undefined;
+      if (savedId) setMessages((m) => m.map((msg) => (msg.id === replyId ? { ...msg, id: savedId } : msg)));
     } catch (err) {
-      setMessages((m) => m.filter((msg) => msg.id !== userMsg.id && msg.id !== replyId));
-      setDraft(text);
+      setMessages((m) => m.filter((msg) => msg.id !== opts.userMsg.id && msg.id !== replyId));
+      opts.onFail();
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setPending(false);
     }
+  }
+
+  const send = useCallback(async () => {
+    const text = draft.trim();
+    if (!text || pending) return;
+    setDraft("");
+    await exchange({
+      userMsg: { id: `u-${Date.now()}`, role: "user", content: text, kind: "chat" },
+      request: () =>
+        fetch("/api/coach", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        }),
+      onFail: () => setDraft(text),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft, pending]);
+
+  // Anything typed goes along as the note for the video ("my back handspring").
+  async function sendVideo(file: File) {
+    if (pending || stage) return;
+    const note = draft.trim();
+    setError(null);
+    let uploaded;
+    try {
+      uploaded = await prepareAndUpload(file, "coach", setStage);
+    } catch (err) {
+      setStage(null);
+      setError(err instanceof UserFacingError ? err.message : "Couldn't send that video. Try again.");
+      return;
+    }
+    setDraft("");
+    const { mediaId, frames } = uploaded;
+    await exchange({
+      userMsg: { id: `u-${Date.now()}`, role: "user", content: note, kind: "chat", mediaId },
+      request: () =>
+        fetch("/api/coach/video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mediaId, frames, note }),
+        }),
+      onFail: () => setDraft(note),
+    });
+    setStage(null);
+  }
+
+  function setStar(id: number, on: boolean) {
+    setSaved((s) => {
+      const next = new Set(s);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
 
   if (crisis) {
     return (
@@ -129,32 +197,46 @@ export function Coach(props: {
         {messages.map((m) =>
           m.role === "assistant" ? (
             <div key={m.id} className="rise">
-              {m.kind === "checkin" && (
-                <p className="mb-2 text-xs tracking-[0.2em] text-mute uppercase">Today&rsquo;s check-in</p>
-              )}
+              <div className="flex items-start justify-between gap-3">
+                {m.kind === "checkin" ? (
+                  <p className="mb-2 text-xs tracking-[0.2em] text-mute uppercase">Today&rsquo;s check-in</p>
+                ) : (
+                  <span />
+                )}
+                {typeof m.id === "number" && (
+                  <SaveStar
+                    source="coach"
+                    messageId={m.id}
+                    saved={saved.has(m.id)}
+                    onChange={(on) => setStar(m.id as number, on)}
+                  />
+                )}
+              </div>
               <p className="text-lg leading-relaxed whitespace-pre-wrap text-paper">{m.content}</p>
             </div>
           ) : (
-            <p
-              key={m.id}
-              className="border-l border-line pl-4 text-base leading-relaxed whitespace-pre-wrap text-paper/60"
-            >
-              {m.content}
-            </p>
+            <div key={m.id} className="border-l border-line pl-4">
+              {m.mediaId && <VideoPlayer mediaId={m.mediaId} />}
+              {m.content && (
+                <p className="mt-1 text-base leading-relaxed whitespace-pre-wrap text-paper/60">{m.content}</p>
+              )}
+            </div>
           ),
         )}
         {((pending && !streaming) || (checkingIn && messages.length === 0)) && <Thinking />}
       </div>
 
       <div className="sticky bottom-0 bg-ink pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        {stage && !streaming && <p className="mb-3 text-sm text-paper/70">{stageLabel(stage, "coach")}</p>}
         {error && <p className="mb-3 text-sm text-mute">{error}</p>}
         <div className="flex items-end gap-3 border-t border-line pt-4">
+          {props.videoEnabled && <VideoButton disabled={pending || Boolean(stage)} onPick={sendVideo} />}
           <Composer
             inputRef={inputRef}
             value={draft}
             onChange={setDraft}
             onSubmit={send}
-            disabled={pending}
+            disabled={pending || Boolean(stage)}
           />
           <button
             type="button"
@@ -194,7 +276,8 @@ function Composer(props: {
       rows={1}
       value={props.value}
       maxLength={2000}
-      placeholder="Talk to your coach"
+      placeholder={props.disabled ? "" : "Talk to your coach"}
+      disabled={props.disabled}
       aria-label="Message your coach"
       enterKeyHint="send"
       onChange={(e) => props.onChange(e.target.value)}

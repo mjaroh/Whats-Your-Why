@@ -87,3 +87,79 @@ export async function usernameAllowed(name: string): Promise<boolean> {
   if (response.stop_reason === "refusal") return false;
   return response.parsed_output?.ok ?? false;
 }
+
+// ── Images: group video frames and profile photos ──────────────────────
+
+export type JpegFrame = { t: number; data: Buffer };
+
+function imageBlock(data: Buffer) {
+  return {
+    type: "image" as const,
+    source: { type: "base64" as const, media_type: "image/jpeg" as const, data: data.toString("base64") },
+  };
+}
+
+const VIDEO_PROMPT = `You review still frames from a video an athlete (13 or older) wants to post in the Askesis group chat, a community of young athletes. An admin will also review it; your job is to block what clearly must never be posted.
+
+Block ("block") when frames show:
+- sexual: nudity, underwear, sexual or suggestive content, or framing that focuses on someone's body rather than the athletic skill
+- personal_info: readable details that identify or locate someone: school or club names with a location, street signs, house numbers, license plates, name tags, documents, screens with personal info
+- self_harm: self-harm, injuries being shown off, or someone in danger
+- dangerous: risky stunts outside a supervised training setting (roofs, streets, no mats, drugs, weapons)
+- hate: hateful symbols or gestures
+- other: not a sports video at all, or anything else clearly not okay for a youth community
+
+Allow ("allow") normal training and competition footage: gyms, fields, pools, mats, apparatus, coaches and teammates in the background, leotards, uniforms and ordinary athletic wear.`;
+
+const VideoVerdict = z.object({
+  verdict: z.enum(["allow", "block"]),
+  category: z.enum(["none", "sexual", "personal_info", "self_harm", "dangerous", "hate", "other"]),
+});
+export type VideoBlockCategory = Exclude<z.infer<typeof VideoVerdict>["category"], "none">;
+
+export const VIDEO_BLOCK_REASONS: Record<Exclude<VideoBlockCategory, "self_harm">, string> = {
+  sexual: "That video can't be posted here.",
+  personal_info:
+    "The video shows details that could identify or locate someone (like a school name, street sign or plate). Try a different clip.",
+  dangerous: "That looks risky, so it can't be posted. Keep training videos in a safe, supervised setting.",
+  hate: "That video can't be posted here.",
+  other: "Only training and competition videos can be posted in the group.",
+};
+
+/** Returns null to allow, or the reason category to block. */
+export async function moderateVideoFrames(frames: JpegFrame[]): Promise<VideoBlockCategory | null> {
+  const content = [
+    ...frames.flatMap((f) => [{ type: "text" as const, text: `Frame at ${f.t.toFixed(1)}s` }, imageBlock(f.data)]),
+    { type: "text" as const, text: "Review these frames." },
+  ];
+  const response = await anthropic().messages.parse({
+    model: MODEL,
+    max_tokens: 2000,
+    system: VIDEO_PROMPT,
+    messages: [{ role: "user", content }],
+    output_config: { effort: "low", format: zodOutputFormat(VideoVerdict) },
+  });
+  if (response.stop_reason === "refusal") return "other";
+  const out = response.parsed_output;
+  if (!out) throw new Error("unparseable video moderation output");
+  if (out.verdict === "allow") return null;
+  return out.category === "none" ? "other" : out.category;
+}
+
+const PhotoVerdict = z.object({ ok: z.boolean() });
+
+/**
+ * Profile photos appear next to group messages, so they get the same care:
+ * a face is fine; anything suggestive, crude or identifying is not.
+ */
+export async function profilePhotoAllowed(photo: Buffer): Promise<boolean> {
+  const response = await anthropic().messages.parse({
+    model: MODEL,
+    max_tokens: 1000,
+    system: `You review profile photos for a community of athletes aged 13 and up. The photo is shown next to their messages. A photo is NOT ok if it is sexual or suggestive, shows nudity or underwear, is crude, violent or hateful, shows drugs, alcohol or weapons, impersonates staff or a brand, or shows readable identifying details (school name, address, street sign, plate, phone number). A normal photo of themselves, a sports action shot, a pet or a simple picture is ok.`,
+    messages: [{ role: "user", content: [imageBlock(photo), { type: "text", text: "Is this profile photo ok?" }] }],
+    output_config: { effort: "low", format: zodOutputFormat(PhotoVerdict) },
+  });
+  if (response.stop_reason === "refusal") return false;
+  return response.parsed_output?.ok ?? false;
+}

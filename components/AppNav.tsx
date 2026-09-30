@@ -4,7 +4,7 @@ import { useClerk } from "@clerk/nextjs";
 import { useState } from "react";
 
 // Top bar for signed-in athletes: the group (free) and their coach (members).
-export function AppNav(props: { active: "group" | "coach"; member: boolean; admin: boolean }) {
+export function AppNav(props: { active: "group" | "coach" | "profile"; member: boolean; admin: boolean }) {
   const [open, setOpen] = useState(false);
   const { signOut } = useClerk();
 
@@ -14,7 +14,7 @@ export function AppNav(props: { active: "group" | "coach"; member: boolean; admi
     if (data?.url) window.location.href = data.url;
   }
 
-  const tab = (name: "group" | "coach", label: string, href: string) => (
+  const tab = (name: "group" | "coach" | "profile", label: string, href: string) => (
     <a
       href={href}
       aria-current={props.active === name ? "page" : undefined}
@@ -31,9 +31,10 @@ export function AppNav(props: { active: "group" | "coach"; member: boolean; admi
     <header className="sticky top-0 z-10 flex items-center justify-between bg-ink/90 pt-5 pb-4 backdrop-blur-sm">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/askesis-mark.png" alt="Askesis" width={21} height={32} className="h-8 w-auto opacity-90" />
-      <nav className="flex gap-7">
+      <nav className="flex gap-5 sm:gap-7">
         {tab("group", "Group", "/community")}
         {tab("coach", "Coach", "/coach")}
+        {tab("profile", "Profile", "/profile")}
       </nav>
       <div className="relative">
         <button
