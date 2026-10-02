@@ -60,3 +60,23 @@ body {
 .intro-seen #intro {
   display: none;
 }
+
+/* Sticky top bars: solid, edge to edge, and covering everything above them
+   (status bar area, overscroll bounce) so scrolling content never shows
+   through or above the bar. */
+.top-bar {
+  position: sticky;
+  top: 0;
+  background: var(--color-ink);
+  margin-inline: -1.5rem;
+  padding-inline: 1.5rem;
+  padding-top: max(1.25rem, calc(env(safe-area-inset-top) + 0.75rem));
+}
+.top-bar::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 100vh;
+  background: var(--color-ink);
+}

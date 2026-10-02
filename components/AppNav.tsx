@@ -28,7 +28,7 @@ export function AppNav(props: { active: "group" | "coach" | "profile"; member: b
   const item = "block w-full px-5 py-3 text-left text-sm text-paper/80 hover:bg-paper/5";
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between bg-ink/90 pt-5 pb-4 backdrop-blur-sm">
+    <header className="top-bar z-10 flex items-center justify-between border-b border-line pb-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/askesis-mark.png" alt="Askesis" width={21} height={32} className="h-8 w-auto opacity-90" />
       <nav className="flex gap-5 sm:gap-7">
