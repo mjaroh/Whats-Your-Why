@@ -3,16 +3,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAthlete, isSetUp } from "@/lib/athletes";
 import { classifySafety } from "@/lib/claude";
-import { generateGroupCheckin } from "@/lib/coach/claude";
-import { localDay } from "@/lib/coach/time";
 import {
-  addGroupCheckin,
   approvedSince,
   groupMessages,
-  hasGroupCheckin,
   postGroupMessage,
   recentForContext,
-  recentGroupCheckins,
   recentlyHidden,
   type GroupMessage,
 } from "@/lib/group";
@@ -22,13 +17,13 @@ import { BLOCK_REASONS, moderateGroupMessage } from "@/lib/moderation";
 import { rateLimit } from "@/lib/ratelimit";
 import { clientIp, hashIp } from "@/lib/request";
 import { sharesContact } from "@/lib/rules";
+import { todaysQuestion } from "@/lib/questionOfDay";
 import { logCrisisEvent } from "@/lib/safety";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const GROUP_TZ = process.env.GROUP_TIMEZONE || "America/New_York";
 
 function toClient(m: GroupMessage, me: string) {
   return {
@@ -43,17 +38,6 @@ function toClient(m: GroupMessage, me: string) {
   };
 }
 
-/** Posts today's group check-in the first time anyone opens the group that day. */
-async function ensureCheckin() {
-  const { date, weekday } = localDay(GROUP_TZ);
-  if (await hasGroupCheckin(date)) return;
-  try {
-    await addGroupCheckin(date, await generateGroupCheckin(weekday, await recentGroupCheckins()));
-  } catch (err) {
-    console.error("group check-in failed", err);
-  }
-}
-
 // Poll for new messages: ?after=<last id>&since=<oldest id on screen>
 // &approvedAfter=<serverTime from the last poll> (videos approved since then)
 export async function GET(req: Request) {
@@ -62,7 +46,7 @@ export async function GET(req: Request) {
   const athlete = await getAthlete(userId);
   if (!isSetUp(athlete)) return NextResponse.json({ error: "Finish setup first." }, { status: 403 });
 
-  await ensureCheckin();
+  await todaysQuestion();
   const url = new URL(req.url);
   const after = Number(url.searchParams.get("after")) || 0;
   const since = Number(url.searchParams.get("since")) || after;

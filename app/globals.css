@@ -54,3 +54,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .rise, .breathe { animation: none; }
 }
+
+/* The opening intro plays once per app session; the head script adds this
+   class before paint when it has already played. */
+.intro-seen #intro {
+  display: none;
+}
