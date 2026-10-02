@@ -196,7 +196,7 @@ function Conversation(props: {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
-      <header className="sticky top-0 z-[5] flex justify-center bg-ink/90 pt-7 pb-5 backdrop-blur-sm">
+      <header className="top-bar z-[5] flex justify-center pb-5">
         <ProgressDots filled={props.answered} />
       </header>
 

@@ -7,7 +7,7 @@ export function Logo() {
       alt="Askesis"
       width={21}
       height={32}
-      className="pointer-events-none fixed top-5 left-5 z-10 h-8 w-auto opacity-90"
+      className="pointer-events-none fixed top-[max(1.25rem,calc(env(safe-area-inset-top)_+_0.5rem))] left-5 z-10 h-8 w-auto opacity-90"
     />
   );
 }
