@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { prepareAndUpload, stageLabel, UserFacingError, type SendStage } from "@/lib/client/media";
 import { REPLY_ID_MARKER } from "@/lib/constants";
 import { AppNav } from "./AppNav";
+import { AppShell, scrollToEnd } from "./AppShell";
 import { Crisis } from "./Crisis";
 import { SaveStar, VideoButton, VideoPlayer } from "./MediaBits";
 
@@ -33,6 +34,8 @@ export function Coach(props: {
   const [stage, setStage] = useState<SendStage | null>(null);
   const [saved, setSaved] = useState<Set<number>>(() => new Set(props.savedIds));
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const firstScroll = useRef(true);
 
   // Today's check-in, created once per local day.
   useEffect(() => {
@@ -56,7 +59,8 @@ export function Coach(props: {
   }, []);
 
   useEffect(() => {
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    scrollToEnd(scrollRef.current, !firstScroll.current);
+    firstScroll.current = false;
   }, [messages, pending]);
 
   /**
@@ -180,10 +184,41 @@ export function Coach(props: {
   const streaming = pending && messages[messages.length - 1]?.role === "assistant";
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
-      <AppNav active="coach" member admin={props.admin} />
-
-      <div className="flex flex-1 flex-col justify-end gap-7 pt-6 pb-8" aria-live="polite">
+    <AppShell
+      scrollRef={scrollRef}
+      header={<AppNav active="coach" member admin={props.admin} />}
+      footer={
+        <div className="mx-auto w-full max-w-2xl shrink-0 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {stage && !streaming && <p className="mb-3 text-sm text-paper/70">{stageLabel(stage, "coach")}</p>}
+          {error && <p className="mb-3 text-sm text-mute">{error}</p>}
+          <div className="flex items-end gap-3 border-t border-line pt-4">
+            {props.videoEnabled && <VideoButton disabled={pending || Boolean(stage)} onPick={sendVideo} />}
+            <Composer
+              inputRef={inputRef}
+              value={draft}
+              onChange={setDraft}
+              onSubmit={send}
+              disabled={pending || Boolean(stage)}
+            />
+            <button
+              type="button"
+              onClick={send}
+              disabled={!draft.trim() || pending}
+              aria-label="Send"
+              className="shrink-0 pb-1.5 text-paper transition-opacity disabled:opacity-0"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10h11M11 5l5 5-5 5" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div
+        className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-end gap-7 px-6 pt-6 pb-8"
+        aria-live="polite"
+      >
         {props.statement && (
           <p className="font-display border-b border-line pb-8 text-lg leading-snug font-bold tracking-tight text-paper/50">
             &ldquo;{props.statement}&rdquo;
@@ -225,33 +260,7 @@ export function Coach(props: {
         )}
         {((pending && !streaming) || (checkingIn && messages.length === 0)) && <Thinking />}
       </div>
-
-      <div className="sticky bottom-0 bg-ink pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        {stage && !streaming && <p className="mb-3 text-sm text-paper/70">{stageLabel(stage, "coach")}</p>}
-        {error && <p className="mb-3 text-sm text-mute">{error}</p>}
-        <div className="flex items-end gap-3 border-t border-line pt-4">
-          {props.videoEnabled && <VideoButton disabled={pending || Boolean(stage)} onPick={sendVideo} />}
-          <Composer
-            inputRef={inputRef}
-            value={draft}
-            onChange={setDraft}
-            onSubmit={send}
-            disabled={pending || Boolean(stage)}
-          />
-          <button
-            type="button"
-            onClick={send}
-            disabled={!draft.trim() || pending}
-            aria-label="Send"
-            className="shrink-0 pb-1.5 text-paper transition-opacity disabled:opacity-0"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M4 10h11M11 5l5 5-5 5" stroke="currentColor" strokeWidth="1.8" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </main>
+    </AppShell>
   );
 }
 

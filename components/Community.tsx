@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { prepareAndUpload, stageLabel, UserFacingError, type SendStage } from "@/lib/client/media";
 import { GROUP_MAX_CHARS } from "@/lib/constants";
 import { AppNav } from "./AppNav";
+import { AppShell, scrollToEnd } from "./AppShell";
 import { Crisis } from "./Crisis";
 import { Avatar, SaveStar, VideoButton, VideoPlayer } from "./MediaBits";
 
@@ -38,6 +39,8 @@ export function Community(props: {
   const [crisis, setCrisis] = useState(false);
   const [menuFor, setMenuFor] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const firstScroll = useRef(true);
   const idsRef = useRef({ first: 0, last: 0 });
   const serverTimeRef = useRef<string | null>(null);
 
@@ -82,7 +85,8 @@ export function Community(props: {
 
   const lastId = messages[messages.length - 1]?.id;
   useEffect(() => {
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    scrollToEnd(scrollRef.current, !firstScroll.current);
+    firstScroll.current = false;
   }, [lastId]);
 
   type PostResult = { type?: "posted" | "pending" | "blocked" | "crisis"; message?: GroupMsg; reason?: string; error?: string };
@@ -189,10 +193,44 @@ export function Community(props: {
   if (crisis) return <Crisis onBack={() => setCrisis(false)} backLabel="Back to the group" />;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
-      <AppNav active="group" member={props.member} admin={props.admin} />
-
-      <div className="flex flex-1 flex-col justify-end gap-6 pt-6 pb-8" aria-live="polite">
+    <AppShell
+      scrollRef={scrollRef}
+      header={<AppNav active="group" member={props.member} admin={props.admin} />}
+      footer={
+        <div className="mx-auto w-full max-w-2xl shrink-0 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {stage && <p className="mb-3 text-sm text-paper/70">{stageLabel(stage, "group")}</p>}
+          {notice && !stage && <p className="mb-3 text-sm text-mute">{notice}</p>}
+          {props.banned ? (
+            <p className="border-t border-line pt-4 text-sm text-mute">Your account can&rsquo;t post in the group.</p>
+          ) : (
+            <div className="flex items-end gap-3 border-t border-line pt-4">
+              {props.videoEnabled && <VideoButton disabled={sending} onPick={sendVideo} />}
+              <GroupComposer inputRef={inputRef} value={draft} onChange={setDraft} onSubmit={send} disabled={sending} />
+              <button
+                type="button"
+                onClick={send}
+                disabled={!draft.trim() || sending}
+                aria-label="Send"
+                className="shrink-0 pb-1.5 text-paper transition-opacity disabled:opacity-0"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M4 10h11M11 5l5 5-5 5" stroke="currentColor" strokeWidth="1.8" />
+                </svg>
+              </button>
+            </div>
+          )}
+          {draft.length > GROUP_MAX_CHARS - 100 && (
+            <p className="mt-2 text-right text-xs text-mute">
+              {draft.length}/{GROUP_MAX_CHARS}
+            </p>
+          )}
+        </div>
+      }
+    >
+      <div
+        className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-end gap-6 px-6 pt-6 pb-8"
+        aria-live="polite"
+      >
         <div className="border-b border-line pb-6 text-sm leading-relaxed text-mute">
           <p>
             Be for each other. Every message is checked before it posts, and videos are approved
@@ -275,36 +313,7 @@ export function Community(props: {
           ),
         )}
       </div>
-
-      <div className="sticky bottom-0 bg-ink pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        {stage && <p className="mb-3 text-sm text-paper/70">{stageLabel(stage, "group")}</p>}
-        {notice && !stage && <p className="mb-3 text-sm text-mute">{notice}</p>}
-        {props.banned ? (
-          <p className="border-t border-line pt-4 text-sm text-mute">Your account can&rsquo;t post in the group.</p>
-        ) : (
-          <div className="flex items-end gap-3 border-t border-line pt-4">
-            {props.videoEnabled && <VideoButton disabled={sending} onPick={sendVideo} />}
-            <GroupComposer inputRef={inputRef} value={draft} onChange={setDraft} onSubmit={send} disabled={sending} />
-            <button
-              type="button"
-              onClick={send}
-              disabled={!draft.trim() || sending}
-              aria-label="Send"
-              className="shrink-0 pb-1.5 text-paper transition-opacity disabled:opacity-0"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M4 10h11M11 5l5 5-5 5" stroke="currentColor" strokeWidth="1.8" />
-              </svg>
-            </button>
-          </div>
-        )}
-        {draft.length > GROUP_MAX_CHARS - 100 && (
-          <p className="mt-2 text-right text-xs text-mute">
-            {draft.length}/{GROUP_MAX_CHARS}
-          </p>
-        )}
-      </div>
-    </main>
+    </AppShell>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { useClerk } from "@clerk/nextjs";
 import { useState } from "react";
+import { AskesisMark } from "./Brand";
 
 // Top bar for signed-in athletes: the group (free) and their coach (members).
 export function AppNav(props: { active: "group" | "coach" | "profile"; member: boolean; admin: boolean }) {
@@ -28,44 +29,45 @@ export function AppNav(props: { active: "group" | "coach" | "profile"; member: b
   const item = "block w-full px-5 py-3 text-left text-sm text-paper/80 hover:bg-paper/5";
 
   return (
-    <header className="top-bar z-10 flex items-center justify-between border-b border-line pb-4">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/askesis-mark.png" alt="Askesis" width={21} height={32} className="h-8 w-auto opacity-90" />
-      <nav className="flex gap-5 sm:gap-7">
-        {tab("group", "Group", "/community")}
-        {tab("coach", "Coach", "/coach")}
-        {tab("profile", "Profile", "/profile")}
-      </nav>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Menu"
-          aria-expanded={open}
-          className="px-2 py-1 text-xl leading-none text-paper/70"
-        >
-          •••
-        </button>
-        {open && (
-          <div className="absolute right-0 mt-2 w-56 border border-line bg-ink py-2">
-            <a href="/?retake=1" className={item}>
-              Retake the Seven Whys
-            </a>
-            {props.member && (
-              <button type="button" onClick={manage} className={item}>
-                Manage membership
-              </button>
-            )}
-            {props.admin && (
-              <a href="/admin" className={item}>
-                Admin
+    <header className="top-bar relative z-10 border-b border-line">
+      <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-6 pb-4">
+        <AskesisMark className="h-8 w-auto text-paper opacity-90" />
+        <nav className="flex gap-5 sm:gap-7">
+          {tab("group", "Group", "/community")}
+          {tab("coach", "Coach", "/coach")}
+          {tab("profile", "Profile", "/profile")}
+        </nav>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Menu"
+            aria-expanded={open}
+            className="px-2 py-1 text-xl leading-none text-paper/70"
+          >
+            •••
+          </button>
+          {open && (
+            <div className="absolute right-0 mt-2 w-56 border border-line bg-ink py-2">
+              <a href="/?retake=1" className={item}>
+                Retake the Seven Whys
               </a>
-            )}
-            <button type="button" onClick={() => signOut({ redirectUrl: "/" })} className={item}>
-              Sign out
-            </button>
-          </div>
-        )}
+              {props.member && (
+                <button type="button" onClick={manage} className={item}>
+                  Manage membership
+                </button>
+              )}
+              {props.admin && (
+                <a href="/admin" className={item}>
+                  Admin
+                </a>
+              )}
+              <button type="button" onClick={() => signOut({ redirectUrl: "/" })} className={item}>
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

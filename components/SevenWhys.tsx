@@ -11,6 +11,7 @@ import { ProgressDots } from "./ProgressDots";
 import { Continue } from "./Continue";
 import { JoinMembership, type WhyAnswers } from "./JoinMembership";
 import { Crisis } from "./Crisis";
+import { AppShell, scrollToEnd } from "./AppShell";
 
 type Phase = "ask" | "result" | "continue" | "crisis";
 
@@ -184,23 +185,44 @@ function Conversation(props: {
   error: string | null;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll the page itself to the bottom so the newest line sits above the
-    // sticky answer bar rather than behind it.
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    scrollToEnd(scrollRef.current);
     if (!props.pending) ref.current?.focus({ preventScroll: true });
   }, [props.messages.length, props.pending]);
 
   const lastIndex = props.messages.length - 1;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
-      <header className="top-bar z-[5] flex justify-center pb-5">
-        <ProgressDots filled={props.answered} />
-      </header>
-
-      <div className="flex flex-1 flex-col justify-end gap-8 pt-10 pb-8" aria-live="polite">
+    <AppShell
+      scrollRef={scrollRef}
+      header={
+        <header className="top-bar flex justify-center pb-5">
+          <ProgressDots filled={props.answered} />
+        </header>
+      }
+      footer={
+        <div className="mx-auto w-full max-w-2xl shrink-0 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {props.error && <p className="mb-3 text-sm text-mute">{props.error}</p>}
+          <div className="border-t border-line pt-4">
+            <AnswerBox
+              inputRef={ref}
+              value={props.draft}
+              onChange={props.setDraft}
+              onSubmit={props.onSubmit}
+              disabled={props.pending}
+              align="left"
+              label="Your answer"
+            />
+          </div>
+        </div>
+      }
+    >
+      <div
+        className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-end gap-8 px-6 pt-10 pb-8"
+        aria-live="polite"
+      >
         {props.messages.map((m, i) =>
           m.role === "assistant" ? (
             <p
@@ -234,22 +256,7 @@ function Conversation(props: {
           </div>
         )}
       </div>
-
-      <div className="sticky bottom-0 bg-ink pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        {props.error && <p className="mb-3 text-sm text-mute">{props.error}</p>}
-        <div className="border-t border-line pt-4">
-          <AnswerBox
-            inputRef={ref}
-            value={props.draft}
-            onChange={props.setDraft}
-            onSubmit={props.onSubmit}
-            disabled={props.pending}
-            align="left"
-            label="Your answer"
-          />
-        </div>
-      </div>
-    </main>
+    </AppShell>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { resizePhoto } from "@/lib/client/media";
 import { AppNav } from "./AppNav";
+import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 
 type CoachVideo = { mediaId: number; note: string; feedback: string | null; at: string };
@@ -63,116 +64,116 @@ export function Profile(props: {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6 pb-16">
-      <AppNav active="profile" member={props.member} admin={props.admin} />
-
-      {/* Photo, username, why */}
-      <section className="flex flex-col items-center pt-8 text-center">
-        <button
-          type="button"
-          onClick={() => props.photosEnabled && photoInput.current?.click()}
-          aria-label={hasAvatar ? "Change profile photo" : "Add profile photo"}
-          className="relative"
-        >
-          <Avatar username={props.username} hasAvatar={hasAvatar} size={104} version={photoVersion} />
-          {props.photosEnabled && (
-            <span className="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-ink text-sm text-paper">
-              +
-            </span>
-          )}
-        </button>
-        <input
-          ref={photoInput}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = "";
-            if (file) void changePhoto(file);
-          }}
-        />
-        {photoStatus && <p className="mt-3 max-w-xs text-sm text-mute">{photoStatus}</p>}
-        <h1 className="font-display mt-4 text-2xl font-bold tracking-tight">{props.username}</h1>
-        <button
-          type="button"
-          onClick={() => setShowWhy(true)}
-          className="mt-5 border border-paper/40 px-6 py-3 text-xs tracking-[0.2em] uppercase transition-colors hover:border-paper hover:bg-paper hover:text-ink"
-        >
-          Why statement
-        </button>
-      </section>
-
-      {/* Coach videos */}
-      <section className="mt-12">
-        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Coach videos</h2>
-        {props.videos.length === 0 ? (
-          <p className="mt-4 text-sm leading-relaxed text-paper/60">
-            {props.member ? (
-              <>Send your coach a video from the Coach tab and it&rsquo;ll be saved here with the feedback.</>
-            ) : (
-              <>
-                Video feedback is part of your private coach.{" "}
-                <a href="/coach" className="text-paper/80 underline underline-offset-4">
-                  See membership
-                </a>
-              </>
+    <AppShell header={<AppNav active="profile" member={props.member} admin={props.admin} />}>
+      <div className="mx-auto w-full max-w-2xl px-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+2rem))]">
+        {/* Photo, username, why */}
+        <section className="flex flex-col items-center pt-8 text-center">
+          <button
+            type="button"
+            onClick={() => props.photosEnabled && photoInput.current?.click()}
+            aria-label={hasAvatar ? "Change profile photo" : "Add profile photo"}
+            className="relative"
+          >
+            <Avatar username={props.username} hasAvatar={hasAvatar} size={104} version={photoVersion} />
+            {props.photosEnabled && (
+              <span className="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-ink text-sm text-paper">
+                +
+              </span>
             )}
-          </p>
-        ) : (
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {props.videos.map((v) => (
-              <button
-                key={v.mediaId}
-                type="button"
-                onClick={() => setOpenVideo(v)}
-                className="group relative aspect-[3/4] overflow-hidden border border-line bg-black text-left"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/media/${v.mediaId}?poster=1`}
-                  alt=""
-                  className="h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
-                />
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-6 pb-2 text-xs text-paper/90">
-                  {when(v.at)}
-                  {v.note ? ` · ${v.note}` : ""}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
+          </button>
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void changePhoto(file);
+            }}
+          />
+          {photoStatus && <p className="mt-3 max-w-xs text-sm text-mute">{photoStatus}</p>}
+          <h1 className="font-display mt-4 text-2xl font-bold tracking-tight">{props.username}</h1>
+          <button
+            type="button"
+            onClick={() => setShowWhy(true)}
+            className="mt-5 border border-paper/40 px-6 py-3 text-xs tracking-[0.2em] uppercase transition-colors hover:border-paper hover:bg-paper hover:text-ink"
+          >
+            Why statement
+          </button>
+        </section>
 
-      {/* Saved messages */}
-      <section className="mt-12">
-        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Saved</h2>
-        {favorites.length === 0 ? (
-          <p className="mt-4 text-sm leading-relaxed text-paper/60">
-            Tap ☆ on a message from your coach or the group to keep it here.
-          </p>
-        ) : (
-          <div className="mt-4 space-y-4">
-            {favorites.map((f) => (
-              <div key={`${f.source}-${f.messageId}`} className="border border-line px-4 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-xs tracking-[0.15em] text-mute uppercase">{f.from}</p>
-                  <button
-                    type="button"
-                    onClick={() => unsave(f)}
-                    aria-label="Remove from saved"
-                    className="px-1 leading-none text-paper"
-                  >
-                    ★
-                  </button>
+        {/* Coach videos */}
+        <section className="mt-12">
+          <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Coach videos</h2>
+          {props.videos.length === 0 ? (
+            <p className="mt-4 text-sm leading-relaxed text-paper/60">
+              {props.member ? (
+                <>Send your coach a video from the Coach tab and it&rsquo;ll be saved here with the feedback.</>
+              ) : (
+                <>
+                  Video feedback is part of your private coach.{" "}
+                  <a href="/coach" className="text-paper/80 underline underline-offset-4">
+                    See membership
+                  </a>
+                </>
+              )}
+            </p>
+          ) : (
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {props.videos.map((v) => (
+                <button
+                  key={v.mediaId}
+                  type="button"
+                  onClick={() => setOpenVideo(v)}
+                  className="group relative aspect-[3/4] overflow-hidden border border-line bg-black text-left"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/media/${v.mediaId}?poster=1`}
+                    alt=""
+                    className="h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-6 pb-2 text-xs text-paper/90">
+                    {when(v.at)}
+                    {v.note ? ` · ${v.note}` : ""}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Saved messages */}
+        <section className="mt-12">
+          <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Saved</h2>
+          {favorites.length === 0 ? (
+            <p className="mt-4 text-sm leading-relaxed text-paper/60">
+              Tap ☆ on a message from your coach or the group to keep it here.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {favorites.map((f) => (
+                <div key={`${f.source}-${f.messageId}`} className="border border-line px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-xs tracking-[0.15em] text-mute uppercase">{f.from}</p>
+                    <button
+                      type="button"
+                      onClick={() => unsave(f)}
+                      aria-label="Remove from saved"
+                      className="px-1 leading-none text-paper"
+                    >
+                      ★
+                    </button>
+                  </div>
+                  {f.mediaId && <VideoPlayer mediaId={f.mediaId} />}
+                  {f.content && <p className="mt-2 leading-relaxed whitespace-pre-wrap text-paper/90">{f.content}</p>}
                 </div>
-                {f.mediaId && <VideoPlayer mediaId={f.mediaId} />}
-                {f.content && <p className="mt-2 leading-relaxed whitespace-pre-wrap text-paper/90">{f.content}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
 
       {showWhy && (
         <Overlay onClose={() => setShowWhy(false)}>
@@ -203,7 +204,7 @@ export function Profile(props: {
           )}
         </Overlay>
       )}
-    </main>
+    </AppShell>
   );
 }
 
