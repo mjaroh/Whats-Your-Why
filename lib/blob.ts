@@ -1,5 +1,5 @@
 import "server-only";
-import { del, head, issueSignedToken, presignUrl, put } from "@vercel/blob";
+import { del, get, head, issueSignedToken, presignUrl, put } from "@vercel/blob";
 
 // Private Vercel Blob storage. Nothing here is publicly reachable: reads go
 // through our routes, which check who is asking, then hand out a link that
@@ -21,6 +21,29 @@ export async function signedReadUrl(pathname: string): Promise<string> {
     validUntil,
   });
   return presignedUrl;
+}
+
+/**
+ * Streams a private file through our own route (same origin, no signed link).
+ * Used for photos and posters, and as the fallback for videos. Forwards a
+ * Range header so video seeking still works.
+ */
+export async function streamPrivate(pathname: string, range?: string | null): Promise<Response | null> {
+  const result = await get(pathname, {
+    access: "private",
+    ...(range ? { headers: { range } } : {}),
+  });
+  if (!result || result.statusCode !== 200) return null;
+  const headers = new Headers({
+    "Content-Type": result.blob.contentType || "application/octet-stream",
+    "Cache-Control": "private, max-age=300",
+    "Accept-Ranges": "bytes",
+  });
+  const contentRange = result.headers.get("content-range");
+  const contentLength = result.headers.get("content-length");
+  if (contentRange) headers.set("Content-Range", contentRange);
+  if (contentLength) headers.set("Content-Length", contentLength);
+  return new Response(result.stream, { status: contentRange ? 206 : 200, headers });
 }
 
 /** Upload rights for exactly one pathname, used by the phone's direct upload. */

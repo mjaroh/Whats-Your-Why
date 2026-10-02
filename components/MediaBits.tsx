@@ -4,18 +4,24 @@ import { useRef, useState } from "react";
 
 /** Profile photo, or the first letter of the username if there isn't one. */
 export function Avatar(props: { username: string | null; hasAvatar: boolean; size?: number; version?: number }) {
-  const [failed, setFailed] = useState(false);
+  // Remember which photo failed, so a new upload gets a fresh try.
+  const src = props.username
+    ? `/api/avatar/${encodeURIComponent(props.username)}${props.version ? `?v=${props.version}` : ""}`
+    : null;
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
   const size = props.size ?? 28;
   const letter = (props.username ?? "?").slice(0, 1).toUpperCase();
-  if (props.hasAvatar && props.username && !failed) {
+  if (props.hasAvatar && src && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={`/api/avatar/${encodeURIComponent(props.username)}${props.version ? `?v=${props.version}` : ""}`}
+        key={src}
+        src={src!}
         alt=""
         width={size}
         height={size}
-        onError={() => setFailed(true)}
+        onError={() => setFailedSrc(src)}
         className="shrink-0 rounded-full border border-line object-cover"
         style={{ width: size, height: size }}
       />
