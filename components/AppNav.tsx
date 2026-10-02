@@ -2,7 +2,7 @@
 
 import { useClerk } from "@clerk/nextjs";
 import { useState } from "react";
-import { AskesisMark } from "./Brand";
+import { LogoButton } from "./AboutAskesis";
 
 // Top bar for signed-in athletes: the group (free) and their coach (members).
 export function AppNav(props: { active: "group" | "coach" | "profile"; member: boolean; admin: boolean }) {
@@ -31,7 +31,7 @@ export function AppNav(props: { active: "group" | "coach" | "profile"; member: b
   return (
     <header className="top-bar relative z-10 border-b border-line">
       <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-6 pb-4">
-        <AskesisMark className="h-8 w-auto text-paper opacity-90" />
+        <LogoButton className="text-paper" />
         <nav className="flex gap-5 sm:gap-7">
           {tab("group", "Group", "/community")}
           {tab("coach", "Coach", "/coach")}

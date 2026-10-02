@@ -1,8 +1,8 @@
-import { AskesisMark } from "./Brand";
+import { LogoButton } from "./AboutAskesis";
 
-// The Askesis A-mark, pinned top left.
+// The Askesis A-mark, pinned top left. Tapping it opens what Askesis means.
 export function Logo() {
   return (
-    <AskesisMark className="pointer-events-none fixed top-[max(1.25rem,calc(env(safe-area-inset-top)_+_0.5rem))] left-5 z-10 h-8 w-auto text-paper opacity-90" />
+    <LogoButton className="fixed top-[max(1.25rem,calc(env(safe-area-inset-top)_+_0.5rem))] left-5 z-10 text-paper" />
   );
 }
