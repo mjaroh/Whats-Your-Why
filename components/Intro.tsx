@@ -8,7 +8,7 @@ import { AskesisMark, WordmarkLetters } from "./Brand";
 // video, so it's perfectly sharp), then the question of the day for 4
 // seconds, then the app underneath fades in. It plays once each time the app
 // is opened (per browser session), not on every tab change.
-const MARK_MS = 3550; // matches the intro-* keyframes in globals.css
+const MARK_MS = 3750; // matches the intro-* keyframes in globals.css
 const QUESTION_MS = 4000;
 const FADE_MS = 600;
 const FALLBACK_QUESTION = "What's your why?";
