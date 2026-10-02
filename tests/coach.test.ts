@@ -49,3 +49,10 @@ test("past videos appear to the coach as a note", () => {
   );
   assert.equal(out[0].content, "[Sent a video] my back handspring");
 });
+
+test("check-ins lose labels copied from history", async () => {
+  const { stripTags } = await import("../lib/coach/history.ts");
+  assert.equal(stripTags("[Daily check-in] Thursday. How's your head?"), "Thursday. How's your head?");
+  assert.equal(stripTags("Friday. What are you proud of?"), "Friday. What are you proud of?");
+  assert.equal(stripTags("Keep [this] word"), "Keep [this] word");
+});

@@ -2,7 +2,7 @@ import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { anthropic, MODEL } from "../claude";
 import type { CoachMessage, Why } from "../athletes";
-import { toApiMessages } from "./history";
+import { stripTags, toApiMessages } from "./history";
 import { checkinPrompt, coachSystemPrompt, groupCheckinPrompt } from "./prompt";
 import { VOICE_GUIDE } from "./voice";
 
@@ -60,8 +60,9 @@ export async function generateCheckin(opts: {
     .map((b) => (b.type === "text" ? b.text : ""))
     .join("")
     .trim();
-  if (!text) throw new Error("empty check-in");
-  return text;
+  const clean = stripTags(text);
+  if (!clean) throw new Error("empty check-in");
+  return clean;
 }
 
 /** The group's daily check-in, in Michael's voice but for everyone. */
@@ -78,6 +79,7 @@ export async function generateGroupCheckin(weekday: string, recent: string[]): P
     .map((b) => (b.type === "text" ? b.text : ""))
     .join("")
     .trim();
-  if (!text) throw new Error("empty group check-in");
-  return text;
+  const clean = stripTags(text);
+  if (!clean) throw new Error("empty group check-in");
+  return clean;
 }

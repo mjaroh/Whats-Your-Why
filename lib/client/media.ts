@@ -30,21 +30,49 @@ export function videoContentType(file: File): string {
   return "video/mp4";
 }
 
+/** Waits for a decoded frame to be ready to draw after a seek (Safari can lag). */
+function frameReady(video: HTMLVideoElement): Promise<void> {
+  const v = video as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number };
+  if (!v.requestVideoFrameCallback) return new Promise((r) => setTimeout(r, 60));
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, 300);
+    v.requestVideoFrameCallback!(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
 /** Pulls evenly spaced still frames (JPEG) from a video file. */
 export async function extractFrames(file: File, count = VIDEO_FRAMES, width = 640) {
   const url = URL.createObjectURL(file);
   const video = document.createElement("video");
   video.muted = true;
   video.playsInline = true;
+  video.setAttribute("playsinline", "");
+  video.setAttribute("muted", "");
   video.preload = "auto";
+  // iPhone Safari won't load or decode a video that isn't in the page, so it
+  // sits invisibly off screen while we read it.
+  video.style.cssText = "position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none";
+  document.body.appendChild(video);
   video.src = url;
   try {
-    await once(video, "loadeddata");
+    // Only wait for metadata: iPhones don't preload the video data itself.
+    await once(video, "loadedmetadata");
+    // Nudge iOS into decoding frames. Muted inline playback is allowed; if
+    // it's blocked (Low Power Mode), seeking below still usually works.
+    await video
+      .play()
+      .then(() => video.pause())
+      .catch(() => {});
     const duration = video.duration;
     if (!Number.isFinite(duration) || duration <= 0) throw new Error("no duration");
     if (duration > VIDEO_MAX_SECONDS + 1) {
       throw new UserFacingError(`Videos can be up to ${VIDEO_MAX_SECONDS} seconds. Trim it and try again.`);
     }
+    if (!video.videoWidth || !video.videoHeight) await once(video, "loadeddata", 10_000).catch(() => {});
+    if (!video.videoWidth || !video.videoHeight) throw new Error("no size");
     const scale = Math.min(1, width / video.videoWidth);
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(video.videoWidth * scale);
@@ -54,15 +82,22 @@ export async function extractFrames(file: File, count = VIDEO_FRAMES, width = 64
     const frames: Frame[] = [];
     for (let i = 0; i < count; i++) {
       const t = duration * (0.05 + (0.9 * i) / Math.max(1, count - 1));
+      const seeked = once(video, "seeked", 8_000);
       video.currentTime = t;
-      await once(video, "seeked");
+      // A frame that won't seek is skipped rather than failing the video.
+      if (!(await seeked.then(() => true).catch(() => false))) continue;
+      await frameReady(video);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       frames.push({ t: Math.round(t * 10) / 10, data: canvas.toDataURL("image/jpeg", 0.7) });
     }
+    if (frames.length < 3) throw new Error("too few frames");
     return { duration, frames };
   } finally {
-    URL.revokeObjectURL(url);
+    video.pause();
     video.removeAttribute("src");
+    video.load();
+    video.remove();
+    URL.revokeObjectURL(url);
   }
 }
 

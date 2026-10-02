@@ -14,9 +14,17 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   try {
     const body = (await req.json()) as HandleUploadPresignedBody;
+    // We don't use upload-completed callbacks (step 3 confirms the file
+    // instead), so only link requests are accepted.
+    if (body?.type !== "blob.generate-presigned-url") {
+      return NextResponse.json({ error: "Unsupported request." }, { status: 400 });
+    }
     const result = await handleUploadPresigned({
       body,
       request: req,
+      // The library insists on a key for verifying callbacks even though we
+      // never receive any; without one every upload failed.
+      webhookPublicKey: process.env.BLOB_WEBHOOK_PUBLIC_KEY || "unused",
       getSignedToken: async (pathname) => {
         const media = await uploadingByPathname(pathname, userId);
         if (!media) throw new Error("No upload reserved for this path");
