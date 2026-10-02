@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { INTRO_SEEN_KEY } from "@/lib/intro";
+import { AskesisMark, WordmarkLetters } from "./Brand";
 
-// The opening sequence: the Askesis intro video, then the question of the
-// day for 4 seconds, then the app underneath fades in. It plays once each
-// time the app is opened (per browser session), not on every tab change.
+// The opening sequence: the Askesis wordmark animation (drawn in code, not a
+// video, so it's perfectly sharp), then the question of the day for 4
+// seconds, then the app underneath fades in. It plays once each time the app
+// is opened (per browser session), not on every tab change.
+const MARK_MS = 3550; // matches the intro-* keyframes in globals.css
 const QUESTION_MS = 4000;
 const FADE_MS = 600;
 const FALLBACK_QUESTION = "What's your why?";
 
-type Phase = "video" | "question" | "leaving" | "done";
+type Phase = "mark" | "question" | "leaving" | "done";
 
 export function Intro() {
-  const [phase, setPhase] = useState<Phase>("video");
+  const [phase, setPhase] = useState<Phase>("mark");
   const [question, setQuestion] = useState<string | null>(null);
   const [questionLoaded, setQuestionLoaded] = useState(false);
   const [showText, setShowText] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Start: skip if already seen this session, fetch the question, play.
   useEffect(() => {
@@ -36,17 +38,8 @@ export function Intro() {
       .catch(() => {})
       .finally(() => setQuestionLoaded(true));
 
-    const toQuestion = () => setPhase((p) => (p === "video" ? "question" : p));
-    const video = videoRef.current;
-    video?.play().catch(toQuestion); // autoplay blocked (e.g. Low Power Mode)
-    const stalled = setTimeout(() => {
-      if (!video || video.paused) toQuestion();
-    }, 1500);
-    const cap = setTimeout(toQuestion, 7000);
-    return () => {
-      clearTimeout(stalled);
-      clearTimeout(cap);
-    };
+    const t = setTimeout(() => setPhase((p) => (p === "mark" ? "question" : p)), MARK_MS);
+    return () => clearTimeout(t);
   }, []);
 
   // Reveal the question once it's loaded (or after a short wait), hold it, fade out.
@@ -80,22 +73,15 @@ export function Intro() {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity ease-out"
       style={{ opacity: phase === "leaving" ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
     >
-      {phase === "video" ? (
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          autoPlay
-          preload="auto"
-          disablePictureInPicture
-          onEnded={() => setPhase("question")}
-          onError={() => setPhase("question")}
-          aria-label="Askesis"
-          className="aspect-square w-full max-w-[min(100vw,100dvh)] object-contain"
-        >
-          <source src="/intro.mp4" type="video/mp4" />
-          <source src="/intro.webm" type="video/webm" />
-        </video>
+      {phase === "mark" ? (
+        <div className="intro-logo relative text-white" aria-label="Askesis" role="img">
+          <div className="intro-slide relative h-full w-full">
+            <AskesisMark title="" className="absolute top-0 left-0 h-full w-auto" />
+            <div className="intro-reveal absolute inset-0">
+              <WordmarkLetters className="h-full w-full" />
+            </div>
+          </div>
+        </div>
       ) : (
         showText && (
           <div className="rise max-w-xl px-8 text-center">
