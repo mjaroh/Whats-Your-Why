@@ -7,6 +7,7 @@ import { getAthlete, getWhy, isMember, isSetUp, recentMessages } from "@/lib/ath
 import { blobEnabled } from "@/lib/blob";
 import { clerkEnabled } from "@/lib/clerk";
 import { favoriteIds } from "@/lib/media";
+import { stripTags } from "@/lib/coach/history";
 import { PRICE_LABEL, stripeEnabled, syncCheckoutSession } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
@@ -55,7 +56,7 @@ export default async function CoachPage({
       initialMessages={messages.map((m) => ({
         id: m.id,
         role: m.role,
-        content: m.content,
+        content: m.kind === "checkin" ? stripTags(m.content) : m.content,
         kind: m.kind,
         mediaId: m.media_id,
       }))}

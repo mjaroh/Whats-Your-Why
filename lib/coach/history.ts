@@ -33,3 +33,8 @@ export function toApiMessages(history: StoredMessage[], latest: string): Anthrop
   if (turns[0].role === "assistant") turns.unshift({ role: "user", text: "[Athlete opened the coach.]" });
   return turns.map((t) => ({ role: t.role, content: t.text }));
 }
+
+/** Drops labels like "[Daily check-in]" the model sometimes copies from history. */
+export function stripTags(text: string): string {
+  return text.replace(/^(\s*\[[^\]\n]{1,40}\]\s*)+/, "").trim();
+}

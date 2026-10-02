@@ -82,13 +82,15 @@ export async function extractFrames(file: File, count = VIDEO_FRAMES, width = 64
     const frames: Frame[] = [];
     for (let i = 0; i < count; i++) {
       const t = duration * (0.05 + (0.9 * i) / Math.max(1, count - 1));
-      const seeked = once(video, "seeked");
+      const seeked = once(video, "seeked", 8_000);
       video.currentTime = t;
-      await seeked;
+      // A frame that won't seek is skipped rather than failing the video.
+      if (!(await seeked.then(() => true).catch(() => false))) continue;
       await frameReady(video);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       frames.push({ t: Math.round(t * 10) / 10, data: canvas.toDataURL("image/jpeg", 0.7) });
     }
+    if (frames.length < 3) throw new Error("too few frames");
     return { duration, frames };
   } finally {
     video.pause();
