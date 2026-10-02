@@ -62,37 +62,38 @@ body {
 }
 
 /* The opening wordmark: the A-mark fades in, slides left as "SKESIS" is
-   revealed beside it, holds, folds back to the A, then cuts to black.
-   3.55s in total (MARK_MS in components/Intro.tsx). */
+   revealed beside it, holds, folds back to the A, then shoots up off the top
+   of the screen. 3.75s in total (MARK_MS in components/Intro.tsx). */
 .intro-logo {
   width: calc(min(100vw, 100dvh) * 0.34);
   aspect-ratio: 367 / 111;
-  animation: intro-fade 3.55s linear both;
+  animation: intro-launch 3.75s linear both;
 }
 .intro-slide {
-  animation: intro-slide 3.55s linear both;
+  animation: intro-slide 3.75s linear both;
 }
 .intro-reveal {
-  animation: intro-reveal 3.55s linear both;
+  animation: intro-reveal 3.75s linear both;
 }
-@keyframes intro-fade {
-  0% { opacity: 0.13; }
-  11.3%, 96.6% { opacity: 1; }
-  99.4%, 100% { opacity: 0; }
+@keyframes intro-launch {
+  0% { opacity: 0.13; transform: none; }
+  10.7% { opacity: 1; transform: none; }
+  91.5% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4); }
+  100% { opacity: 1; transform: translateY(calc(-50dvh - 100%)) scaleY(1.15); }
 }
 @keyframes intro-slide {
   0% { transform: translateX(40%); }
-  24.5% { transform: translateX(40%); animation-timing-function: cubic-bezier(0.3, 0.6, 0.35, 1); }
-  42.3% { transform: none; }
-  67.6% { transform: none; animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.35); }
-  80.8%, 100% { transform: translateX(40%); }
+  23.2% { transform: translateX(40%); animation-timing-function: cubic-bezier(0.3, 0.6, 0.35, 1); }
+  40% { transform: none; }
+  64% { transform: none; animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.35); }
+  76.5%, 100% { transform: translateX(40%); }
 }
 @keyframes intro-reveal {
   0% { clip-path: inset(-10% 80.4% -10% 0); }
-  24.5% { clip-path: inset(-10% 80.4% -10% 0); animation-timing-function: cubic-bezier(0.3, 0.6, 0.35, 1); }
-  42.3% { clip-path: inset(-10% 0 -10% 0); }
-  67.6% { clip-path: inset(-10% 0 -10% 0); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.35); }
-  80.8%, 100% { clip-path: inset(-10% 80.4% -10% 0); }
+  23.2% { clip-path: inset(-10% 80.4% -10% 0); animation-timing-function: cubic-bezier(0.3, 0.6, 0.35, 1); }
+  40% { clip-path: inset(-10% 0 -10% 0); }
+  64% { clip-path: inset(-10% 0 -10% 0); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.35); }
+  76.5%, 100% { clip-path: inset(-10% 80.4% -10% 0); }
 }
 
 /* App screens with a top bar (group, coach, profile, the Seven Whys). The
