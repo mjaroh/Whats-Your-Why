@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Jost } from "next/font/google";
+import { Intro } from "@/components/Intro";
+import { introHeadScript } from "@/lib/intro";
 import { clerkEnabled } from "@/lib/clerk";
 import { clerkAppearance } from "@/lib/clerkTheme";
 import "./globals.css";
@@ -25,8 +27,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={jost.variable}>
+    <html lang="en" className={jost.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: introHeadScript }} />
+      </head>
       <body>
+        <Intro />
         {clerkEnabled ? (
           <ClerkProvider
             appearance={clerkAppearance}

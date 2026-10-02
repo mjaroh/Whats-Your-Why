@@ -92,6 +92,24 @@ Someone needs to own checking this table.
 - Rate limits: `/api/why` 40 requests per IP per 10 min, `/api/signup` 5.
   The counters live in Postgres so they hold across serverless instances.
 
+## Opening sequence
+
+Every time the app is opened:
+1. **Intro video** (`public/intro.mp4`, with `intro.webm` as a fallback) plays
+   on black.
+2. **Question of the day** (the group's daily check-in, from `/api/question`)
+   shows for 4 seconds.
+3. The app fades in.
+
+It plays once per app session, not on every tab change. A script in `<head>`
+hides it before first paint when it has already played. Tapping skips it. If
+autoplay is blocked (e.g. iPhone Low Power Mode), it goes straight to the
+question. With no database or API key, the question falls back to "What's your
+why?".
+
+To replace the video, export a square clip and convert it (no audio track):
+`ffmpeg -i intro.mov -an -vf scale=720:720,format=yuv420p -c:v libx264 -crf 22 -movflags +faststart public/intro.mp4`
+
 ## Accounts, group chat and the paid coach
 
 Accounts switch on once the Clerk keys are set. Until then the site stays

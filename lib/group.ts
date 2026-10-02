@@ -76,10 +76,11 @@ export async function recentForContext(limit = 8) {
   return msgs.map((m) => ({ username: m.username ?? "Askesis", content: m.content }));
 }
 
-export async function hasGroupCheckin(date: string) {
+export async function groupCheckinFor(date: string): Promise<string | null> {
   const sql = await db();
-  const [row] = await sql`SELECT 1 FROM group_messages WHERE checkin_date = ${date}`;
-  return Boolean(row);
+  const [row] = await sql<{ content: string }[]>`
+    SELECT content FROM group_messages WHERE checkin_date = ${date}`;
+  return row?.content ?? null;
 }
 
 export async function addGroupCheckin(date: string, content: string) {
