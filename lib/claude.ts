@@ -37,9 +37,13 @@ function toApiMessages(
   questionNumber: number | "final",
   allowReask: boolean,
   reminder?: string,
+  sport?: string | null,
 ): Anthropic.MessageParam[] {
+  const kickoff = sport
+    ? `[The athlete opened the Seven Whys. Their sport: ${sport}.]`
+    : "[The athlete opened the Seven Whys.]";
   const messages: Anthropic.MessageParam[] = [
-    { role: "user", content: "[The athlete opened the Seven Whys.]" },
+    { role: "user", content: kickoff },
     { role: "assistant", content: FIRST_QUESTION },
   ];
   history.forEach((m, i) => {
@@ -69,12 +73,13 @@ export async function generateNext(
   questionNumber: number | "final",
   allowReask: boolean,
   reminder?: string,
+  sport?: string | null,
 ): Promise<WhyOutput> {
   const response = await anthropic().messages.parse({
     model: MODEL,
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
-    messages: toApiMessages(history, questionNumber, allowReask, reminder),
+    messages: toApiMessages(history, questionNumber, allowReask, reminder, sport),
     output_config: { effort: "low", format: zodOutputFormat(WhyOutput) },
   });
   if (response.stop_reason === "refusal") {

@@ -12,8 +12,9 @@ import { Continue } from "./Continue";
 import { JoinMembership, type WhyAnswers } from "./JoinMembership";
 import { Crisis } from "./Crisis";
 import { AppShell, scrollToEnd } from "./AppShell";
+import { SportChoices } from "./SportChoices";
 
-type Phase = "ask" | "result" | "continue" | "crisis";
+type Phase = "sport" | "ask" | "result" | "continue" | "crisis";
 
 // The conversation lives only in this component's memory. Nothing is stored
 // unless the athlete creates an account (or is signed in) and chooses to keep
@@ -27,7 +28,8 @@ export function SevenWhys({
   /** Already a member retaking the exercise. */
   signedIn?: boolean;
 }) {
-  const [phase, setPhase] = useState<Phase>("ask");
+  const [phase, setPhase] = useState<Phase>("sport");
+  const [sport, setSport] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: FIRST_QUESTION },
   ]);
@@ -53,7 +55,7 @@ export function SevenWhys({
       const res = await fetch("/api/why", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, answered }),
+        body: JSON.stringify({ messages: history, answered, sport }),
       });
       data = (await res.json()) as WhyResponse;
     } catch {
@@ -84,12 +86,26 @@ export function SevenWhys({
         setDraft(answer);
         setError(data.text);
     }
-  }, [draft, pending, messages, answered]);
+  }, [draft, pending, messages, answered, sport]);
 
   if (phase === "crisis") return <Crisis />;
+  if (phase === "sport") {
+    return (
+      <SportScreen
+        onPick={(s) => {
+          setSport(s);
+          setPhase("ask");
+        }}
+        onSkip={() => {
+          setSport(null);
+          setPhase("ask");
+        }}
+      />
+    );
+  }
   if (phase === "continue") {
     return membership ? (
-      <JoinMembership statement={statement} answers={answers} signedIn={signedIn} />
+      <JoinMembership statement={statement} answers={answers} sport={sport} signedIn={signedIn} />
     ) : (
       <Continue />
     );
@@ -110,7 +126,14 @@ export function SevenWhys({
       error={error}
     />
   ) : (
-    <Landing draft={draft} setDraft={setDraft} onSubmit={submit} error={error} />
+    <Landing
+      draft={draft}
+      setDraft={setDraft}
+      onSubmit={submit}
+      error={error}
+      sport={sport}
+      onChangeSport={() => setPhase("sport")}
+    />
   );
 }
 
@@ -126,6 +149,28 @@ function pairAnswers(history: ChatMessage[]): WhyAnswers {
   return out;
 }
 
+/* ---------- Screen 0: Sport ---------- */
+
+function SportScreen({ onPick, onSkip }: { onPick: (sport: string) => void; onSkip: () => void }) {
+  return (
+    <main className="flex min-h-dvh flex-col items-center justify-center px-6 pt-24 pb-16">
+      <div className="rise flex w-full max-w-xl flex-col items-center">
+        <h1 className="font-display text-center text-4xl font-bold tracking-tight sm:text-5xl">
+          What&rsquo;s your sport?
+        </h1>
+        <SportChoices onPick={onPick} className="mt-10" />
+        <button
+          type="button"
+          onClick={onSkip}
+          className="mt-10 text-sm tracking-[0.2em] text-paper/50 uppercase underline-offset-4 hover:text-paper hover:underline"
+        >
+          Skip
+        </button>
+      </div>
+    </main>
+  );
+}
+
 /* ---------- Screen 1: Landing ---------- */
 
 function Landing(props: {
@@ -133,6 +178,8 @@ function Landing(props: {
   setDraft: (v: string) => void;
   onSubmit: () => void;
   error: string | null;
+  sport: string | null;
+  onChangeSport: () => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -154,6 +201,16 @@ function Landing(props: {
       onClick={() => ref.current?.focus()}
     >
       <div className="flex w-full max-w-xl flex-col items-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            props.onChangeSport();
+          }}
+          className="mb-6 text-xs tracking-[0.2em] text-mute uppercase hover:text-paper"
+        >
+          {props.sport ? `${props.sport} · change` : "Add your sport"}
+        </button>
         <h1 className="font-display text-center text-4xl font-bold tracking-tight sm:text-5xl">
           {FIRST_QUESTION}
         </h1>

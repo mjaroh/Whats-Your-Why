@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_ANSWER_CHARS } from "./constants";
+import { SPORT_MAX_CHARS } from "./sports";
 
 /** A why as the client sends it: the statement plus the question/answer pairs. */
 export const WhyBody = z.object({
@@ -12,4 +13,6 @@ export const WhyBody = z.object({
       }),
     )
     .max(20),
+  /** What they train in, from the question before the Seven Whys. */
+  sport: z.string().trim().max(SPORT_MAX_CHARS).nullish(),
 });

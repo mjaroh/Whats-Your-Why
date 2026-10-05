@@ -5,6 +5,7 @@ import { resizePhoto } from "@/lib/client/media";
 import { AppNav } from "./AppNav";
 import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
+import { SportChoices } from "./SportChoices";
 
 type CoachVideo = { mediaId: number; note: string; feedback: string | null; at: string };
 type Favorite = {
@@ -24,6 +25,7 @@ export function Profile(props: {
   admin: boolean;
   photosEnabled: boolean;
   why: string | null;
+  sport: string | null;
   videos: CoachVideo[];
   favorites: Favorite[];
 }) {
@@ -31,6 +33,9 @@ export function Profile(props: {
   const [photoVersion, setPhotoVersion] = useState(0);
   const [photoStatus, setPhotoStatus] = useState<string | null>(null);
   const [showWhy, setShowWhy] = useState(false);
+  const [sport, setSport] = useState(props.sport);
+  const [editSport, setEditSport] = useState(false);
+  const [sportError, setSportError] = useState<string | null>(null);
   const [openVideo, setOpenVideo] = useState<CoachVideo | null>(null);
   const [favorites, setFavorites] = useState(props.favorites);
   const photoInput = useRef<HTMLInputElement>(null);
@@ -52,6 +57,21 @@ export function Profile(props: {
     } catch (err) {
       setPhotoStatus(err instanceof Error ? err.message : "Couldn't save that photo.");
     }
+  }
+
+  async function saveSport(next: string) {
+    setSportError(null);
+    const res = await fetch("/api/account/sport", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sport: next }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      setSportError("Couldn't save that. Try again.");
+      return;
+    }
+    setSport(next);
+    setEditSport(false);
   }
 
   async function unsave(f: Favorite) {
@@ -94,6 +114,13 @@ export function Profile(props: {
           />
           {photoStatus && <p className="mt-3 max-w-xs text-sm text-mute">{photoStatus}</p>}
           <h1 className="font-display mt-4 text-2xl font-bold tracking-tight">{props.username}</h1>
+          <button
+            type="button"
+            onClick={() => setEditSport(true)}
+            className="mt-2 text-xs tracking-[0.2em] text-mute uppercase hover:text-paper"
+          >
+            {sport ?? "Add your sport"}
+          </button>
           <button
             type="button"
             onClick={() => setShowWhy(true)}
@@ -188,6 +215,15 @@ export function Profile(props: {
           <a href="/?retake=1" className="mt-10 inline-block text-sm text-paper/60 underline underline-offset-4">
             {props.why ? "Retake the Seven Whys" : "Find your why"}
           </a>
+        </Overlay>
+      )}
+
+      {editSport && (
+        <Overlay onClose={() => setEditSport(false)}>
+          <p className="text-xs tracking-[0.2em] text-mute uppercase">Your sport</p>
+          <p className="mt-4 leading-relaxed text-paper/70">Your coach uses this to talk your sport&rsquo;s language.</p>
+          <SportChoices current={sport} onPick={saveSport} className="mt-8" />
+          {sportError && <p className="mt-6 text-sm text-mute">{sportError}</p>}
         </Overlay>
       )}
 

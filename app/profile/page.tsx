@@ -31,6 +31,7 @@ export default async function ProfilePage() {
       admin={admin}
       photosEnabled={blobEnabled()}
       why={why?.statement ?? null}
+      sport={why?.sport ?? null}
       videos={videos.map((v) => ({
         mediaId: v.media_id,
         note: v.note,

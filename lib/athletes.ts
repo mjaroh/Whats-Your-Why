@@ -1,4 +1,5 @@
 import "server-only";
+import { cleanSport } from "./sports";
 import { db } from "./db";
 
 export type Athlete = {
@@ -13,9 +14,11 @@ export type Athlete = {
   current_period_end: Date | null;
 };
 
+/** Their why, plus their sport (which can be set without a why). */
 export type Why = {
-  statement: string;
+  statement: string | null;
   answers: { question: string; answer: string }[];
+  sport?: string | null;
 };
 
 export type CoachMessage = {
@@ -67,17 +70,28 @@ export class UsernameTakenError extends Error {}
 export async function getWhy(athleteId: string): Promise<Why | null> {
   const sql = await db();
   const [row] = await sql<Why[]>`
-    SELECT statement, answers FROM whys WHERE athlete_id = ${athleteId}`;
-  return row ?? null;
+    SELECT w.statement, COALESCE(w.answers, '[]'::jsonb) AS answers, a.sport
+    FROM athletes a LEFT JOIN whys w ON w.athlete_id = a.id
+    WHERE a.id = ${athleteId}`;
+  if (!row || (!row.statement && !row.sport)) return null;
+  return row;
 }
 
-export async function saveWhy(athleteId: string, why: Why) {
+export async function saveWhy(athleteId: string, why: Why & { statement: string }) {
   const sql = await db();
   await sql`
     INSERT INTO whys (athlete_id, statement, answers)
     VALUES (${athleteId}, ${why.statement}, ${sql.json(why.answers)})
     ON CONFLICT (athlete_id) DO UPDATE SET
       statement = EXCLUDED.statement, answers = EXCLUDED.answers, updated_at = now()`;
+  // A skipped sport question keeps the sport they already have.
+  const sport = cleanSport(why.sport);
+  if (sport) await setSport(athleteId, sport);
+}
+
+export async function setSport(athleteId: string, sport: string | null) {
+  const sql = await db();
+  await sql`UPDATE athletes SET sport = ${cleanSport(sport)} WHERE id = ${athleteId}`;
 }
 
 export async function recentMessages(athleteId: string, limit = 40): Promise<CoachMessage[]> {
