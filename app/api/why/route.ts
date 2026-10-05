@@ -12,6 +12,7 @@ import { keywordScreen } from "@/lib/keywords";
 import { rateLimit } from "@/lib/ratelimit";
 import { clientIp, hashIp } from "@/lib/request";
 import { logCrisisEvent } from "@/lib/safety";
+import { cleanSport, SPORT_MAX_CHARS } from "@/lib/sports";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ const Body = z.object({
     .max(2 * (TOTAL_QUESTIONS + MAX_REASKS)),
   /** Answers that counted toward the seven, before the latest one. */
   answered: z.number().int().min(0).max(TOTAL_QUESTIONS - 1),
+  /** Picked on the screen before the first question. */
+  sport: z.string().max(SPORT_MAX_CHARS).nullish(),
 });
 
 function reply(body: WhyResponse, status = 200) {
@@ -47,6 +50,7 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return reply({ type: "error", text: "Invalid request." }, 400);
   const { messages, answered } = parsed.data;
+  const sport = cleanSport(parsed.data.sport);
 
   // Shape check: Q1, A1, Q2, A2, ... ending on the athlete's answer.
   const wellFormed =
@@ -75,7 +79,7 @@ export async function POST(req: Request) {
   //    released if the classifier clears the message.
   const [safety, next] = await Promise.allSettled([
     classifySafety(messages),
-    generateNext(messages, questionNumber, allowReask),
+    generateNext(messages, questionNumber, allowReask, undefined, sport),
   ]);
 
   if (safety.status === "rejected") console.error("safety classifier failed", safety.reason);
@@ -122,7 +126,7 @@ export async function POST(req: Request) {
       ? 'Reminder: respond with type "final" and the purpose statement now'
       : `Reminder: respond with type "question" and ask question ${questionNumber}. Do not write the purpose statement yet`;
   try {
-    const second = await generateNext(messages, questionNumber, allowReask, reminder);
+    const second = await generateNext(messages, questionNumber, allowReask, reminder, sport);
     if (second.type === "crisis") {
       await logModelCrisis();
       return reply({ type: "crisis" });

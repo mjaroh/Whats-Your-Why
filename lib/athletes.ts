@@ -1,4 +1,5 @@
 import "server-only";
+import { cleanSport } from "./sports";
 import { db } from "./db";
 
 export type Athlete = {
@@ -16,6 +17,7 @@ export type Athlete = {
 export type Why = {
   statement: string;
   answers: { question: string; answer: string }[];
+  sport?: string | null;
 };
 
 export type CoachMessage = {
@@ -67,17 +69,18 @@ export class UsernameTakenError extends Error {}
 export async function getWhy(athleteId: string): Promise<Why | null> {
   const sql = await db();
   const [row] = await sql<Why[]>`
-    SELECT statement, answers FROM whys WHERE athlete_id = ${athleteId}`;
+    SELECT statement, answers, sport FROM whys WHERE athlete_id = ${athleteId}`;
   return row ?? null;
 }
 
 export async function saveWhy(athleteId: string, why: Why) {
   const sql = await db();
   await sql`
-    INSERT INTO whys (athlete_id, statement, answers)
-    VALUES (${athleteId}, ${why.statement}, ${sql.json(why.answers)})
+    INSERT INTO whys (athlete_id, statement, answers, sport)
+    VALUES (${athleteId}, ${why.statement}, ${sql.json(why.answers)}, ${cleanSport(why.sport)})
     ON CONFLICT (athlete_id) DO UPDATE SET
-      statement = EXCLUDED.statement, answers = EXCLUDED.answers, updated_at = now()`;
+      statement = EXCLUDED.statement, answers = EXCLUDED.answers,
+      sport = COALESCE(EXCLUDED.sport, whys.sport), updated_at = now()`;
 }
 
 export async function recentMessages(athleteId: string, limit = 40): Promise<CoachMessage[]> {

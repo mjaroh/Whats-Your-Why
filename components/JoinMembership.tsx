@@ -20,12 +20,13 @@ function store(key: string, value: string) {
 export function JoinMembership(props: {
   statement: string;
   answers: WhyAnswers;
+  sport: string | null;
   signedIn: boolean;
 }) {
   const [age13, setAge13] = useState(false);
   const [status, setStatus] = useState<"idle" | "busy">("idle");
   const [error, setError] = useState<string | null>(null);
-  const why = { statement: props.statement, answers: props.answers };
+  const why = { statement: props.statement, answers: props.answers, sport: props.sport };
 
   async function saveToCoach() {
     setStatus("busy");

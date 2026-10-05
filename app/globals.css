@@ -65,7 +65,7 @@ body {
    revealed beside it, holds, folds back to the A, then shoots up off the top
    of the screen. 3.75s in total (MARK_MS in components/Intro.tsx). */
 .intro-logo {
-  width: calc(min(100vw, 100dvh) * 0.34);
+  width: min(70vw, 18rem); /* same size as the wordmark on the Askesis page */
   aspect-ratio: 367 / 111;
   animation: intro-launch 3.75s linear both;
 }
