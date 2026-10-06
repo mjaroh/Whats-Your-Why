@@ -35,10 +35,11 @@ test("today's status drives the profile button color", async () => {
   const habits = [h(1, "must"), h(2, "must"), h(3, "must"), h(4, "want"), h(5, "wish")];
   assert.equal(todayStatus([], [], null), "unset");
   assert.equal(todayStatus(habits, [], null), "none");
+  // No sleep logged: red, even with every habit checked.
+  assert.equal(todayStatus(habits, [1, 2, 3, 4, 5], null), "none");
   assert.equal(todayStatus(habits, [], 8), "started");
-  assert.equal(todayStatus(habits, [1, 2], null), "started");
-  assert.equal(todayStatus(habits, [1, 2, 3], null), "musts");
-  assert.equal(todayStatus(habits, [1, 2, 3, 4, 5], null), "musts");
+  assert.equal(todayStatus(habits, [1, 2], 0), "started");
+  assert.equal(todayStatus(habits, [1, 2, 3], 6), "musts");
   assert.equal(todayStatus(habits, [1, 2, 3, 4], 7), "musts");
   assert.equal(todayStatus(habits, [1, 2, 3, 4, 5], 7), "done");
 });
