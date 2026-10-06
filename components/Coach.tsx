@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { prepareAndUpload, stageLabel, UserFacingError, type SendStage } from "@/lib/client/media";
 import { REPLY_ID_MARKER } from "@/lib/constants";
-import { AppNav } from "./AppNav";
+import { AppNav, type NavMe } from "./AppNav";
 import { AppShell, scrollToEnd } from "./AppShell";
 import { Crisis } from "./Crisis";
 import { SaveStar, VideoButton, VideoPlayer } from "./MediaBits";
@@ -18,6 +18,7 @@ type Msg = {
 };
 
 export function Coach(props: {
+  nav: NavMe;
   firstName: string | null;
   statement: string | null;
   initialMessages: Msg[];
@@ -186,7 +187,7 @@ export function Coach(props: {
   return (
     <AppShell
       scrollRef={scrollRef}
-      header={<AppNav active="coach" member admin={props.admin} />}
+      header={<AppNav active="coach" me={props.nav} />}
       footer={
         <div className="mx-auto w-full max-w-2xl shrink-0 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {stage && !streaming && <p className="mb-3 text-sm text-paper/70">{stageLabel(stage, "coach")}</p>}

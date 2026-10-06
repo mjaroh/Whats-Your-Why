@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { prepareAndUpload, stageLabel, UserFacingError, type SendStage } from "@/lib/client/media";
 import { GROUP_MAX_CHARS } from "@/lib/constants";
-import { AppNav } from "./AppNav";
+import { AppNav, type NavMe } from "./AppNav";
 import { AppShell, scrollToEnd } from "./AppShell";
 import { Crisis } from "./Crisis";
 import { Avatar, SaveStar, VideoButton, VideoPlayer } from "./MediaBits";
@@ -22,6 +22,7 @@ type GroupMsg = {
 const POLL_MS = 4000;
 
 export function Community(props: {
+  nav: NavMe;
   me: string;
   member: boolean;
   admin: boolean;
@@ -195,7 +196,7 @@ export function Community(props: {
   return (
     <AppShell
       scrollRef={scrollRef}
-      header={<AppNav active="group" member={props.member} admin={props.admin} />}
+      header={<AppNav active="group" me={props.nav} />}
       footer={
         <div className="mx-auto w-full max-w-2xl shrink-0 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {stage && <p className="mb-3 text-sm text-paper/70">{stageLabel(stage, "group")}</p>}

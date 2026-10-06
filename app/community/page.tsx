@@ -24,6 +24,7 @@ export default async function CommunityPage() {
   ]);
   return (
     <Community
+      nav={{ username: athlete!.username!, hasAvatar: Boolean(athlete!.avatar_pathname) }}
       me={athlete!.username!}
       member={isMember(athlete)}
       admin={admin}
