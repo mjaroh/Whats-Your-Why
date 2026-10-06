@@ -6,7 +6,7 @@ import { AppNav } from "./AppNav";
 import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 import { SportChoices } from "./SportChoices";
-import { habitsComplete, TIER_LABEL, TIERS, type Tier } from "@/lib/habitRules";
+import { habitsComplete, type Tier } from "@/lib/habitRules";
 
 type CoachVideo = { mediaId: number; note: string; feedback: string | null; at: string };
 type Favorite = {
@@ -151,26 +151,13 @@ export function Profile(props: {
         />
 
         {/* Habit tracker */}
-        <section className="mt-12">
-          <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Habit tracker</h2>
-          <a
-            href="/habits"
-            className="mt-4 flex items-center justify-between gap-4 border border-line px-5 py-4 transition-colors hover:border-paper/50"
-          >
-            <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-paper/80">
-              {props.habitTiers.length === 0
-                ? "Choose your must do, want to do and wish to do habits"
-                : TIERS.map((t) => (
-                    <span key={t}>
-                      {TIER_LABEL[t]} {props.habitTiers.filter((x) => x === t).length}
-                    </span>
-                  ))}
-            </span>
-            <span aria-hidden className="text-paper/60">
-              →
-            </span>
-          </a>
-        </section>
+        <a
+          href="/habits"
+          className="mt-12 flex items-center justify-between border border-paper/40 px-6 py-4 text-xs tracking-[0.2em] uppercase transition-colors hover:border-paper hover:bg-paper hover:text-ink"
+        >
+          Habit tracker
+          <span aria-hidden>→</span>
+        </a>
 
         {/* Coach videos */}
         <section className="mt-12">
