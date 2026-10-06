@@ -192,6 +192,8 @@ function Today(props: {
         </div>
       )}
 
+      <Sleep value={data.sleep} onChange={props.onSleep} />
+
       {TIERS.map((tier) => (
         <TierList
           key={tier}
@@ -205,7 +207,6 @@ function Today(props: {
         />
       ))}
 
-      <Sleep value={data.sleep} onChange={props.onSleep} />
       <p className="mt-10 text-xs leading-relaxed text-mute">
         Your checklist starts fresh at midnight. Each day is saved to your log.
       </p>
@@ -328,8 +329,10 @@ function TierList(props: {
   );
 }
 
+/** Sleep sits first. Until it's logged it's loud: the profile button stays red too. */
 function Sleep({ value, onChange }: { value: number | null; onChange: (hours: number) => void }) {
   const [local, setLocal] = useState<number | null>(value);
+  const [picked, setPicked] = useState(8);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => setLocal(value), [value]);
 
@@ -339,28 +342,57 @@ function Sleep({ value, onChange }: { value: number | null; onChange: (hours: nu
     timer.current = setTimeout(() => onChange(hours), 400);
   }
 
-  return (
-    <section className="mt-12">
-      <div className="flex items-baseline justify-between border-b border-line pb-2">
-        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Sleep last night</h2>
-        <span className="text-sm text-paper tabular-nums">{local === null ? "Not logged" : sleepLabel(local)}</span>
-      </div>
+  const slider = (v: number, set: (h: number) => void, accent: string) => (
+    <>
       <input
         type="range"
         min={0}
         max={SLEEP_MAX}
         step={0.5}
-        value={local ?? 8}
-        onChange={(e) => change(Number(e.target.value))}
+        value={v}
+        onChange={(e) => set(Number(e.target.value))}
         aria-label="Hours of sleep last night"
-        aria-valuetext={local === null ? "Not logged" : sleepLabel(local)}
-        className={`mt-6 w-full accent-paper ${local === null ? "opacity-40" : ""}`}
+        aria-valuetext={sleepLabel(v)}
+        className={`mt-6 w-full ${accent}`}
       />
       <div className="mt-2 flex justify-between text-xs text-mute">
         <span>0</span>
         <span>6</span>
         <span>12+</span>
       </div>
+    </>
+  );
+
+  if (local === null) {
+    return (
+      <section className="mt-8 border-2 border-status-red px-5 py-6" aria-label="Log your sleep">
+        <p className="text-xs tracking-[0.2em] text-status-red uppercase">Sleep not logged</p>
+        <h2 className="font-display mt-3 text-2xl leading-tight font-bold tracking-tight">
+          How much did you sleep last night?
+        </h2>
+        <p className="font-display mt-6 text-center text-4xl font-bold tabular-nums">{sleepLabel(picked)}</p>
+        {slider(picked, setPicked, "accent-status-red")}
+        <button
+          type="button"
+          onClick={() => {
+            setLocal(picked);
+            onChange(picked);
+          }}
+          className="mt-6 w-full bg-status-red py-4 text-sm tracking-[0.2em] text-ink uppercase"
+        >
+          Log {sleepLabel(picked)}
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-10">
+      <div className="flex items-baseline justify-between border-b border-line pb-2">
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Sleep last night</h2>
+        <span className="text-sm text-paper tabular-nums">{sleepLabel(local)}</span>
+      </div>
+      {slider(local, change, "accent-paper")}
     </section>
   );
 }

@@ -53,8 +53,8 @@ export function cleanTitle(value: string): string {
 
 /**
  * How today is going, for the Habit tracker button on the profile:
- * - "none": nothing checked and no sleep logged yet (red)
- * - "started": something done, but not every must do (yellow)
+ * - "none": sleep not logged yet, whatever else is checked (red)
+ * - "started": sleep logged, but not every must do (yellow)
  * - "musts": every must do done (green)
  * - "done": every habit done and sleep logged (grayed out)
  * - "unset": no habits yet
@@ -63,11 +63,10 @@ export type TodayStatus = "unset" | "none" | "started" | "musts" | "done";
 
 export function todayStatus(habits: Habit[], checked: number[], sleep: number | null): TodayStatus {
   if (habits.length === 0) return "unset";
+  if (sleep === null) return "none";
   const done = new Set(checked);
-  const any = habits.some((h) => done.has(h.id)) || sleep !== null;
-  if (!any) return "none";
   const musts = habits.filter((h) => h.tier === "must");
   if (!musts.every((h) => done.has(h.id))) return "started";
-  if (sleep !== null && habits.every((h) => done.has(h.id))) return "done";
+  if (habits.every((h) => done.has(h.id))) return "done";
   return "musts";
 }
