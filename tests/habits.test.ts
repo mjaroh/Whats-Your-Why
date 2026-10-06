@@ -29,3 +29,16 @@ test("habit names are one short line", () => {
   assert.equal(cleanTitle("Stretch\n10 min"), "Stretch 10 min");
   assert.equal(cleanTitle("x".repeat(100)).length, 60);
 });
+
+test("today's status drives the profile button color", async () => {
+  const { todayStatus } = await import("../lib/habitRules.ts");
+  const habits = [h(1, "must"), h(2, "must"), h(3, "must"), h(4, "want"), h(5, "wish")];
+  assert.equal(todayStatus([], [], null), "unset");
+  assert.equal(todayStatus(habits, [], null), "none");
+  assert.equal(todayStatus(habits, [], 8), "started");
+  assert.equal(todayStatus(habits, [1, 2], null), "started");
+  assert.equal(todayStatus(habits, [1, 2, 3], null), "musts");
+  assert.equal(todayStatus(habits, [1, 2, 3, 4, 5], null), "musts");
+  assert.equal(todayStatus(habits, [1, 2, 3, 4], 7), "musts");
+  assert.equal(todayStatus(habits, [1, 2, 3, 4, 5], 7), "done");
+});
