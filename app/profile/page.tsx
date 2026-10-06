@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin";
 import { getAthlete, getWhy, isMember, isSetUp } from "@/lib/athletes";
 import { blobEnabled } from "@/lib/blob";
 import { clerkEnabled } from "@/lib/clerk";
+import { activeHabits } from "@/lib/habits";
 import { coachVideos, listFavorites } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +18,12 @@ export default async function ProfilePage() {
   const athlete = await getAthlete(userId);
   if (!isSetUp(athlete)) redirect("/welcome");
 
-  const [why, videos, favorites, admin] = await Promise.all([
+  const [why, videos, favorites, admin, habits] = await Promise.all([
     getWhy(userId),
     coachVideos(userId),
     listFavorites(userId),
     isAdmin(),
+    activeHabits(userId),
   ]);
   return (
     <Profile
@@ -32,6 +34,7 @@ export default async function ProfilePage() {
       photosEnabled={blobEnabled()}
       why={why?.statement ?? null}
       sport={why?.sport ?? null}
+      habitTiers={habits.map((h) => h.tier)}
       videos={videos.map((v) => ({
         mediaId: v.media_id,
         note: v.note,

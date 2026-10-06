@@ -133,6 +133,26 @@ async function ensureSchema(sql: postgres.Sql) {
       PRIMARY KEY (message_id, reporter_id)
     )`;
   await sql`
+    CREATE TABLE IF NOT EXISTS habits (
+      id BIGSERIAL PRIMARY KEY,
+      athlete_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+      tier TEXT NOT NULL,
+      title TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      archived_at TIMESTAMPTZ
+    )`;
+  await sql`CREATE INDEX IF NOT EXISTS habits_athlete ON habits (athlete_id) WHERE archived_at IS NULL`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS habit_days (
+      athlete_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+      day DATE NOT NULL,
+      checked JSONB NOT NULL DEFAULT '[]',
+      counts JSONB NOT NULL DEFAULT '{}',
+      sleep_hours REAL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (athlete_id, day)
+    )`;
+  await sql`
     CREATE TABLE IF NOT EXISTS rate_limits (
       key TEXT PRIMARY KEY,
       window_start TIMESTAMPTZ NOT NULL,

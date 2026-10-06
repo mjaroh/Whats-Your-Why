@@ -6,6 +6,7 @@ import { AppNav } from "./AppNav";
 import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 import { SportChoices } from "./SportChoices";
+import { habitsComplete, TIER_LABEL, TIERS, type Tier } from "@/lib/habitRules";
 
 type CoachVideo = { mediaId: number; note: string; feedback: string | null; at: string };
 type Favorite = {
@@ -26,6 +27,7 @@ export function Profile(props: {
   photosEnabled: boolean;
   why: string | null;
   sport: string | null;
+  habitTiers: Tier[];
   videos: CoachVideo[];
   favorites: Favorite[];
 }) {
@@ -130,6 +132,46 @@ export function Profile(props: {
           </button>
         </section>
 
+        {/* Profile completion */}
+        <Completion
+          steps={[
+            {
+              label: "Add a profile photo",
+              done: hasAvatar,
+              onClick: () => props.photosEnabled && photoInput.current?.click(),
+            },
+            { label: "Add your sport", done: Boolean(sport), onClick: () => setEditSport(true) },
+            { label: "Find your why", done: Boolean(props.why), href: "/?retake=1" },
+            {
+              label: "Set up your habits",
+              done: habitsComplete(props.habitTiers.map((tier) => ({ tier }))),
+              href: "/habits",
+            },
+          ]}
+        />
+
+        {/* Habit tracker */}
+        <section className="mt-12">
+          <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Habit tracker</h2>
+          <a
+            href="/habits"
+            className="mt-4 flex items-center justify-between gap-4 border border-line px-5 py-4 transition-colors hover:border-paper/50"
+          >
+            <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-paper/80">
+              {props.habitTiers.length === 0
+                ? "Choose your must do, want to do and wish to do habits"
+                : TIERS.map((t) => (
+                    <span key={t}>
+                      {TIER_LABEL[t]} {props.habitTiers.filter((x) => x === t).length}
+                    </span>
+                  ))}
+            </span>
+            <span aria-hidden className="text-paper/60">
+              →
+            </span>
+          </a>
+        </section>
+
         {/* Coach videos */}
         <section className="mt-12">
           <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Coach videos</h2>
@@ -221,7 +263,9 @@ export function Profile(props: {
       {editSport && (
         <Overlay onClose={() => setEditSport(false)}>
           <p className="text-xs tracking-[0.2em] text-mute uppercase">Your sport</p>
-          <p className="mt-4 leading-relaxed text-paper/70">Your coach uses this to talk your sport&rsquo;s language.</p>
+          <p className="mt-4 leading-relaxed text-paper/70">
+            Your coach uses this to talk your sport&rsquo;s language.
+          </p>
           <SportChoices current={sport} onPick={saveSport} className="mt-8" />
           {sportError && <p className="mt-6 text-sm text-mute">{sportError}</p>}
         </Overlay>
@@ -241,6 +285,56 @@ export function Profile(props: {
         </Overlay>
       )}
     </AppShell>
+  );
+}
+
+function Completion(props: { steps: { label: string; done: boolean; href?: string; onClick?: () => void }[] }) {
+  const left = props.steps.filter((s) => !s.done).length;
+  if (left === 0) {
+    return <p className="mt-10 text-center text-xs tracking-[0.2em] text-paper/60 uppercase">✓ Profile complete</p>;
+  }
+  const item = "flex w-full items-center gap-3 py-2.5 text-left text-sm";
+  return (
+    <section className="mt-12 border border-line px-5 py-4">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Complete your profile</h2>
+        <span className="text-xs text-paper/60 tabular-nums">
+          {props.steps.length - left}/{props.steps.length}
+        </span>
+      </div>
+      <ul className="mt-2">
+        {props.steps.map((s) => {
+          const body = (
+            <>
+              <span
+                aria-hidden
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+                  s.done ? "border-paper bg-paper text-ink" : "border-paper/40"
+                }`}
+              >
+                {s.done ? "✓" : ""}
+              </span>
+              <span className={s.done ? "text-paper/40 line-through" : "text-paper"}>{s.label}</span>
+            </>
+          );
+          return (
+            <li key={s.label}>
+              {s.done ? (
+                <div className={item}>{body}</div>
+              ) : s.href ? (
+                <a href={s.href} className={item}>
+                  {body}
+                </a>
+              ) : (
+                <button type="button" onClick={s.onClick} className={item}>
+                  {body}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
