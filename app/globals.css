@@ -5,6 +5,10 @@
   --color-paper: #f2efe8;
   --color-mute: #8a867e;
   --color-line: #2a2926;
+  /* Habit tracker button: how today is going. */
+  --color-status-red: #d4544a;
+  --color-status-yellow: #e0b23e;
+  --color-status-green: #5aa86c;
   --font-display: "Futura", "Futura PT", var(--font-jost), "Century Gothic", sans-serif;
   --font-body: "Futura", "Futura PT", var(--font-jost), "Century Gothic", ui-sans-serif, system-ui, sans-serif;
 }

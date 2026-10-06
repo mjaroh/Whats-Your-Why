@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { resizePhoto } from "@/lib/client/media";
 import { AppNav } from "./AppNav";
 import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 import { SportChoices } from "./SportChoices";
-import { habitsComplete, type Tier } from "@/lib/habitRules";
+import { habitsComplete, type Tier, type TodayStatus } from "@/lib/habitRules";
 
 type CoachVideo = { mediaId: number; note: string; feedback: string | null; at: string };
 type Favorite = {
@@ -150,14 +150,8 @@ export function Profile(props: {
           ]}
         />
 
-        {/* Habit tracker */}
-        <a
-          href="/habits"
-          className="mt-12 flex items-center justify-between border border-paper/40 px-6 py-4 text-xs tracking-[0.2em] uppercase transition-colors hover:border-paper hover:bg-paper hover:text-ink"
-        >
-          Habit tracker
-          <span aria-hidden>→</span>
-        </a>
+        {/* Habit tracker: colored by how today is going */}
+        <HabitButton />
 
         {/* Coach videos */}
         <section className="mt-12">
@@ -272,6 +266,41 @@ export function Profile(props: {
         </Overlay>
       )}
     </AppShell>
+  );
+}
+
+const HABIT_BUTTON: Record<TodayStatus, { className: string; status: string }> = {
+  unset: { className: "border-paper/40 text-paper", status: "" },
+  none: { className: "border-status-red bg-status-red text-ink", status: "Nothing done today yet" },
+  started: { className: "border-status-yellow bg-status-yellow text-ink", status: "Must dos in progress" },
+  musts: { className: "border-status-green bg-status-green text-ink", status: "All must dos done" },
+  done: { className: "border-line text-paper/35", status: "Everything done today" },
+};
+
+function HabitButton() {
+  const [status, setStatus] = useState<TodayStatus>("unset");
+  useEffect(() => {
+    const load = () => {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      fetch(`/api/habits?summary=1&tz=${encodeURIComponent(tz)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { status?: TodayStatus } | null) => d?.status && setStatus(d.status))
+        .catch(() => {});
+    };
+    load();
+    const onVisible = () => document.visibilityState === "visible" && load();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+  const look = HABIT_BUTTON[status];
+  return (
+    <a
+      href="/habits"
+      className={`mt-12 block border px-6 py-4 text-center text-xs tracking-[0.2em] uppercase transition-colors duration-500 ${look.className}`}
+    >
+      Habit tracker
+      {look.status && <span className="sr-only">. {look.status}</span>}
+    </a>
   );
 }
 

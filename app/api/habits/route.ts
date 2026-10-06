@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAthlete, isSetUp } from "@/lib/athletes";
 import { localDay } from "@/lib/coach/time";
-import { cleanSleep, cleanTitle, HABIT_MAX_CHARS, TIERS } from "@/lib/habitRules";
+import { cleanSleep, cleanTitle, HABIT_MAX_CHARS, TIERS, todayStatus } from "@/lib/habitRules";
 import {
   activeHabits,
   addHabit,
@@ -29,8 +29,16 @@ async function athleteId(): Promise<string | null> {
 export async function GET(req: Request) {
   const id = await athleteId();
   if (!id) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const tz = new URL(req.url).searchParams.get("tz") ?? "UTC";
-  const { date, weekday } = localDay(tz);
+  const params = new URL(req.url).searchParams;
+  const { date, weekday } = localDay(params.get("tz") ?? "UTC");
+  // The profile button only needs how today is going.
+  if (params.get("summary")) {
+    const [habits, day] = await Promise.all([activeHabits(id), today(id, date)]);
+    return NextResponse.json(
+      { status: todayStatus(habits, day.checked, day.sleep) },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
   const [habits, day, log] = await Promise.all([activeHabits(id), today(id, date), habitLog(id, date)]);
   return NextResponse.json(
     { date, weekday, habits, checked: day.checked, sleep: day.sleep, log },
