@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { AppNav } from "./AppNav";
+import { AppNav, type NavMe } from "./AppNav";
 
 export function Paywall(props: {
+  nav: NavMe;
   statement: string | null;
   price: string;
   open: boolean;
@@ -28,7 +29,7 @@ export function Paywall(props: {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
-      <AppNav active="coach" member={false} admin={props.admin} />
+      <AppNav active="coach" me={props.nav} />
       <div className="rise mx-auto flex w-full max-w-md flex-1 flex-col justify-center pt-10 pb-16">
         {props.statement && (
           <p className="font-display mb-12 text-2xl leading-snug font-bold tracking-tight">

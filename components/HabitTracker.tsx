@@ -14,7 +14,7 @@ import {
   type Habit,
   type Tier,
 } from "@/lib/habitRules";
-import { AppNav } from "./AppNav";
+import { AppNav, type NavMe } from "./AppNav";
 import { AppShell } from "./AppShell";
 
 type LogDay = { day: string; counts: DayCounts | null; checked: string[]; sleep: number | null };
@@ -43,7 +43,7 @@ async function post(body: Record<string, unknown>) {
 const shortDate = (day: string, opts: Intl.DateTimeFormatOptions) =>
   new Date(`${day}T12:00:00Z`).toLocaleDateString(undefined, { timeZone: "UTC", ...opts });
 
-export function HabitTracker(props: { member: boolean; admin: boolean }) {
+export function HabitTracker(props: { nav: NavMe }) {
   const [data, setData] = useState<Data | null>(null);
   const [layer, setLayer] = useState<"today" | "log">("today");
   const [editing, setEditing] = useState(false);
@@ -105,7 +105,7 @@ export function HabitTracker(props: { member: boolean; admin: boolean }) {
   const complete = data ? habitsComplete(data.habits) : false;
 
   return (
-    <AppShell header={<AppNav active="profile" member={props.member} admin={props.admin} />}>
+    <AppShell header={<AppNav active="profile" me={props.nav} />}>
       <div className="mx-auto w-full max-w-2xl px-6 pt-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+2rem))]">
         <div className="flex items-center justify-between">
           <a href="/profile" className="text-xs tracking-[0.2em] text-mute uppercase hover:text-paper">

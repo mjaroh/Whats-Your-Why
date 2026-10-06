@@ -37,6 +37,7 @@ export default async function CoachPage({
   if (!isMember(athlete)) {
     return (
       <Paywall
+        nav={{ username: athlete!.username!, hasAvatar: Boolean(athlete!.avatar_pathname) }}
         statement={why?.statement ?? null}
         price={PRICE_LABEL}
         open={stripeEnabled()}
@@ -48,6 +49,7 @@ export default async function CoachPage({
   const [messages, saved] = await Promise.all([recentMessages(userId, 60), favoriteIds(userId, "coach")]);
   return (
     <Coach
+      nav={{ username: athlete!.username!, hasAvatar: Boolean(athlete!.avatar_pathname) }}
       firstName={athlete!.first_name}
       admin={admin}
       statement={why?.statement ?? null}

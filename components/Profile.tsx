@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { resizePhoto } from "@/lib/client/media";
 import { AppNav } from "./AppNav";
+import { ProfileMenu } from "./ProfileMenu";
 import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 import { SportChoices } from "./SportChoices";
@@ -86,10 +87,13 @@ export function Profile(props: {
   }
 
   return (
-    <AppShell header={<AppNav active="profile" member={props.member} admin={props.admin} />}>
+    <AppShell header={<AppNav active="profile" me={{ username: props.username, hasAvatar, version: photoVersion }} />}>
       <div className="mx-auto w-full max-w-2xl px-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+2rem))]">
         {/* Photo, username, why */}
-        <section className="flex flex-col items-center pt-8 text-center">
+        <section className="relative flex flex-col items-center pt-8 text-center">
+          <div className="absolute top-4 right-0">
+            <ProfileMenu member={props.member} admin={props.admin} />
+          </div>
           <button
             type="button"
             onClick={() => props.photosEnabled && photoInput.current?.click()}
