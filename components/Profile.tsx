@@ -77,6 +77,9 @@ export function Profile(props: {
     setEditSport(false);
   }
 
+  const savedVideos = favorites.filter((f) => f.mediaId);
+  const quotes = favorites.filter((f) => !f.mediaId && f.content);
+
   async function unsave(f: Favorite) {
     setFavorites((list) => list.filter((x) => !(x.source === f.source && x.messageId === f.messageId)));
     await fetch("/api/favorites", {
@@ -157,76 +160,93 @@ export function Profile(props: {
         {/* Habit tracker: colored by how today is going */}
         <HabitButton />
 
-        {/* Coach videos */}
-        <section className="mt-12">
-          <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Coach videos</h2>
-          {props.videos.length === 0 ? (
-            <p className="mt-4 text-sm leading-relaxed text-paper/60">
-              {props.member ? (
-                <>Send your coach a video from the Coach tab and it&rsquo;ll be saved here with the feedback.</>
-              ) : (
+        {/* Content and Quotes: two tabs you can swipe between */}
+        <SwipeTabs
+          className="mt-12"
+          tabs={[
+            {
+              label: "Content",
+              body: (
                 <>
-                  Video feedback is part of your private coach.{" "}
-                  <a href="/coach" className="text-paper/80 underline underline-offset-4">
-                    See membership
-                  </a>
+                  {props.videos.length === 0 ? (
+                    <p className="text-sm leading-relaxed text-paper/60">
+                      {props.member ? (
+                        <>Send your coach a video from the Coach tab and it&rsquo;ll be saved here with the feedback.</>
+                      ) : (
+                        <>
+                          Video feedback is part of your private coach.{" "}
+                          <a href="/coach" className="text-paper/80 underline underline-offset-4">
+                            See membership
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {props.videos.map((v) => (
+                        <button
+                          key={v.mediaId}
+                          type="button"
+                          onClick={() => setOpenVideo(v)}
+                          className="group relative aspect-[3/4] overflow-hidden border border-line bg-black text-left"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`/api/media/${v.mediaId}?poster=1`}
+                            alt=""
+                            className="h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
+                          />
+                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-6 pb-2 text-xs text-paper/90">
+                            {when(v.at)}
+                            {v.note ? ` · ${v.note}` : ""}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {savedVideos.length > 0 && (
+                    <div className="mt-8 space-y-4">
+                      <p className="text-xs tracking-[0.15em] text-mute uppercase">Saved videos</p>
+                      {savedVideos.map((f) => (
+                        <div key={`${f.source}-${f.messageId}`} className="border border-line px-4 py-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-xs tracking-[0.15em] text-mute uppercase">{f.from}</p>
+                            <UnsaveStar onClick={() => unsave(f)} />
+                          </div>
+                          <VideoPlayer mediaId={f.mediaId!} />
+                          {f.content && <p className="mt-2 leading-relaxed text-paper/80">{f.content}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
-              )}
-            </p>
-          ) : (
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {props.videos.map((v) => (
-                <button
-                  key={v.mediaId}
-                  type="button"
-                  onClick={() => setOpenVideo(v)}
-                  className="group relative aspect-[3/4] overflow-hidden border border-line bg-black text-left"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/api/media/${v.mediaId}?poster=1`}
-                    alt=""
-                    className="h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
-                  />
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-6 pb-2 text-xs text-paper/90">
-                    {when(v.at)}
-                    {v.note ? ` · ${v.note}` : ""}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Saved messages */}
-        <section className="mt-12">
-          <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Saved</h2>
-          {favorites.length === 0 ? (
-            <p className="mt-4 text-sm leading-relaxed text-paper/60">
-              Tap ☆ on a message from your coach or the group to keep it here.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {favorites.map((f) => (
-                <div key={`${f.source}-${f.messageId}`} className="border border-line px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-xs tracking-[0.15em] text-mute uppercase">{f.from}</p>
-                    <button
-                      type="button"
-                      onClick={() => unsave(f)}
-                      aria-label="Remove from saved"
-                      className="px-1 leading-none text-paper"
-                    >
-                      ★
-                    </button>
+              ),
+            },
+            {
+              label: "Quotes",
+              body:
+                quotes.length === 0 ? (
+                  <p className="text-sm leading-relaxed text-paper/60">
+                    Tap ☆ on a message from your coach or the group to keep it here.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {quotes.map((f) => (
+                      <figure key={`${f.source}-${f.messageId}`} className="border border-line px-5 py-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <figcaption className="text-xs tracking-[0.15em] text-mute uppercase">{f.from}</figcaption>
+                          <UnsaveStar onClick={() => unsave(f)} />
+                        </div>
+                        <blockquote className="font-display mt-3 text-xl leading-snug font-bold tracking-tight whitespace-pre-wrap text-paper">
+                          &ldquo;{f.content}&rdquo;
+                        </blockquote>
+                      </figure>
+                    ))}
                   </div>
-                  {f.mediaId && <VideoPlayer mediaId={f.mediaId} />}
-                  {f.content && <p className="mt-2 leading-relaxed whitespace-pre-wrap text-paper/90">{f.content}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+                ),
+            },
+          ]}
+        />
       </div>
 
       {showWhy && (
@@ -305,6 +325,72 @@ function HabitButton() {
       Habit tracker
       {look.status && <span className="sr-only">. {look.status}</span>}
     </a>
+  );
+}
+
+function UnsaveStar({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-label="Remove from saved" className="px-1 leading-none text-paper">
+      ★
+    </button>
+  );
+}
+
+/**
+ * Tabs whose panels sit side by side: swipe sideways or tap a tab. Native
+ * scroll snapping does the swiping, so it feels like the phone's own.
+ */
+function SwipeTabs(props: { tabs: { label: string; body: React.ReactNode }[]; className?: string }) {
+  const [active, setActive] = useState(0);
+  const track = useRef<HTMLDivElement>(null);
+
+  function go(i: number) {
+    const el = track.current;
+    if (!el) return;
+    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    setActive(i);
+  }
+
+  return (
+    <section className={props.className}>
+      <div role="tablist" className="flex border-b border-line">
+        {props.tabs.map((t, i) => (
+          <button
+            key={t.label}
+            type="button"
+            role="tab"
+            aria-selected={active === i}
+            onClick={() => go(i)}
+            className={`-mb-px flex-1 border-b py-3 text-xs tracking-[0.2em] uppercase transition-colors ${
+              active === i ? "border-paper text-paper" : "border-transparent text-paper/45 hover:text-paper/80"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div
+        ref={track}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+          if (i !== active) setActive(i);
+        }}
+        className="flex snap-x snap-mandatory items-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {props.tabs.map((t, i) => (
+          <div
+            key={t.label}
+            role="tabpanel"
+            aria-label={t.label}
+            aria-hidden={active !== i}
+            className="w-full shrink-0 snap-start snap-always pt-6"
+          >
+            {t.body}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
