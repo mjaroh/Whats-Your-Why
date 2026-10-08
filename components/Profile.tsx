@@ -7,6 +7,8 @@ import { ProfileMenu } from "./ProfileMenu";
 import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 import { SportChoices } from "./SportChoices";
+import { LA28Countdown } from "./LA28Countdown";
+import { isSummerOlympicSport } from "@/lib/olympics";
 import { habitsComplete, type Tier, type TodayStatus } from "@/lib/habitRules";
 
 type CoachVideo = { mediaId: number; note: string; feedback: string | null; at: string };
@@ -130,6 +132,7 @@ export function Profile(props: {
           >
             {sport ?? "Add your sport"}
           </button>
+          {isSummerOlympicSport(sport) && <LA28Countdown className="mt-6" />}
           <button
             type="button"
             onClick={() => setShowWhy(true)}
