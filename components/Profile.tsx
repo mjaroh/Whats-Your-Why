@@ -325,7 +325,7 @@ function HabitButton() {
       href="/habits"
       className={`mt-12 block border px-6 py-4 text-center text-xs tracking-[0.2em] uppercase transition-colors duration-500 ${look.className}`}
     >
-      Habit tracker
+      HABIT TRACKER
       {look.status && <span className="sr-only">. {look.status}</span>}
     </a>
   );
