@@ -129,7 +129,7 @@ export function HabitTracker(props: { nav: NavMe }) {
           </div>
         </div>
 
-        <h1 className="font-display mt-8 text-3xl font-bold tracking-tight">Habit tracker</h1>
+        <h1 className="font-display mt-8 text-3xl font-bold tracking-tight">HABIT TRACKER</h1>
         {error && <p className="mt-4 text-sm text-mute">{error}</p>}
         {!data ? (
           !error && <p className="mt-8 text-paper/50">Loading…</p>
