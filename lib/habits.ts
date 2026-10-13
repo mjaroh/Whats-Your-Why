@@ -118,3 +118,19 @@ export async function habitLog(athleteId: string, today: string, days = 30): Pro
   }
   return out;
 }
+
+/**
+ * Every tracked day from the first one to today, with the habit ids checked
+ * that day. Feeds the month and total-progress grids.
+ */
+export async function habitGrid(athleteId: string, today: string) {
+  const sql = await db();
+  const rows = await sql<{ day: string; checked: number[] }[]>`
+    SELECT to_char(day, 'YYYY-MM-DD') AS day, checked FROM habit_days
+    WHERE athlete_id = ${athleteId} AND day <= ${today}::date
+    ORDER BY day`;
+  return {
+    first: rows[0]?.day ?? null,
+    checked: Object.fromEntries(rows.map((r) => [r.day, r.checked])) as Record<string, number[]>,
+  };
+}

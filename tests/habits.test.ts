@@ -43,3 +43,14 @@ test("today's status drives the profile button color", async () => {
   assert.equal(todayStatus(habits, [1, 2, 3, 4], 7), "musts");
   assert.equal(todayStatus(habits, [1, 2, 3, 4, 5], 7), "done");
 });
+
+test("grid rows: the whole month, or every day since tracking began", async () => {
+  const { gridDays } = await import("../lib/habitRules.ts");
+  const month = gridDays("month", "2026-02-10", "2026-01-20");
+  assert.equal(month.length, 28);
+  assert.equal(month[0], "2026-02-01");
+  assert.equal(month.at(-1), "2026-02-28");
+  const total = gridDays("total", "2026-02-02", "2026-01-30");
+  assert.deepEqual(total, ["2026-01-30", "2026-01-31", "2026-02-01", "2026-02-02"]);
+  assert.deepEqual(gridDays("total", "2026-02-02", null), ["2026-02-02"]);
+});

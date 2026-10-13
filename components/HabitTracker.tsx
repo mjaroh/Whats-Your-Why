@@ -10,6 +10,7 @@ import {
   TIER_MAX,
   TIER_MIN,
   TIERS,
+  gridDays,
   type DayCounts,
   type Habit,
   type Tier,
@@ -419,6 +420,7 @@ function Log({ data }: { data: Data }) {
 
   return (
     <>
+      <HabitGrid today={data.date} habits={data.habits} todayChecked={data.checked} />
       <SleepChart days={days.slice(0, 14).reverse()} today={data.date} />
       <section className="mt-12">
         <h2 className="border-b border-line pb-2 text-xs tracking-[0.2em] text-mute uppercase">Last 30 days</h2>
@@ -467,6 +469,148 @@ function Log({ data }: { data: Data }) {
         </ul>
       </section>
     </>
+  );
+}
+
+/**
+ * Dates across the top, habits down the side (must dos, then want, then
+ * wish). A filled white box means done. "Month" shows every day of this
+ * month; "Total progress" runs from the first tracked day and grows a column
+ * a day. It opens scrolled to today.
+ */
+function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number[] }) {
+  const [mode, setMode] = useState<"month" | "total">("month");
+  const [grid, setGrid] = useState<{ first: string | null; checked: Record<string, number[]> } | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/habits?grid=1&tz=${encodeURIComponent(tz())}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { first: string | null; checked: Record<string, number[]> } | null) => d && setGrid(d))
+      .catch(() => {});
+  }, []);
+
+  const habits = TIERS.flatMap((t) => props.habits.filter((h) => h.tier === t));
+  const first = grid?.first ?? props.today;
+  const days = gridDays(mode, props.today, grid?.first ?? null);
+  const checkedOn = (day: string) => new Set(day === props.today ? props.todayChecked : (grid?.checked[day] ?? []));
+  const scroller = useRef<HTMLDivElement>(null);
+
+  // Keep today in view: scroll so its column sits near the right edge.
+  useEffect(() => {
+    const el = scroller.current;
+    const cell = el?.querySelector<HTMLElement>("[data-today]");
+    if (el && cell) el.scrollLeft = Math.max(0, cell.offsetLeft + cell.offsetWidth - el.clientWidth + 24);
+  }, [mode, grid, days.length]);
+
+  return (
+    <section className="mt-8">
+      <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">
+          {mode === "month" ? shortDate(props.today, { month: "long" }) : "Since day one"}
+        </h2>
+        <div className="flex border border-line" role="tablist" aria-label="Grid view">
+          {(
+            [
+              ["month", "Month"],
+              ["total", "Total progress"],
+            ] as const
+          ).map(([m, text]) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => setMode(m)}
+              className={`px-3 py-1.5 text-[10px] tracking-[0.15em] uppercase transition-colors ${
+                mode === m ? "bg-paper text-ink" : "text-paper/60 hover:text-paper"
+              }`}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {habits.length === 0 ? (
+        <p className="mt-4 text-sm text-paper/60">Add habits on the Today tab to start your grid.</p>
+      ) : (
+        <div ref={scroller} className="mt-4 overflow-x-auto overscroll-x-contain">
+          <table className="border-separate border-spacing-[3px]">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 bg-ink" />
+                {days.map((day, i) => {
+                  const showMonth = i === 0 || day.endsWith("-01");
+                  const isToday = day === props.today;
+                  return (
+                    <th
+                      key={day}
+                      scope="col"
+                      data-today={isToday || undefined}
+                      className={`w-6 min-w-6 align-bottom text-[10px] font-normal tabular-nums ${
+                        isToday ? "text-paper" : "text-mute"
+                      }`}
+                    >
+                      {showMonth && (
+                        <span className="block text-[8px] tracking-[0.1em] uppercase">
+                          {shortDate(day, { month: "short" })}
+                        </span>
+                      )}
+                      {Number(day.slice(8))}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            {TIERS.map((t) => {
+              const inTier = habits.filter((h) => h.tier === t);
+              if (inTier.length === 0) return null;
+              return (
+                <tbody key={t}>
+                  <tr>
+                    <th
+                      scope="rowgroup"
+                      className="sticky left-0 z-10 bg-ink pt-3 pr-2 text-left text-[9px] font-normal tracking-[0.15em] text-mute uppercase"
+                    >
+                      {TIER_LABEL[t]}
+                    </th>
+                    <td colSpan={days.length} />
+                  </tr>
+                  {inTier.map((h) => (
+                    <tr key={h.id}>
+                      <th
+                        scope="row"
+                        title={h.title}
+                        className="sticky left-0 z-10 bg-ink pr-2 text-left text-xs font-normal text-paper/80"
+                      >
+                        <span className="block max-w-28 truncate">{h.title}</span>
+                      </th>
+                      {days.map((day) => {
+                        const outside = day > props.today || day < first;
+                        const on = !outside && checkedOn(day).has(h.id);
+                        return (
+                          <td key={day} className="p-0">
+                            <span
+                              role="img"
+                              aria-label={`${h.title}, ${shortDate(day, { month: "short", day: "numeric" })}: ${
+                                outside ? "not tracked" : on ? "done" : "not done"
+                              }`}
+                              className={`block h-6 w-6 border ${
+                                on ? "border-paper bg-paper" : outside ? "border-line/50" : "border-paper/35"
+                              }`}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              );
+            })}
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
