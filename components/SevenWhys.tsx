@@ -13,6 +13,7 @@ import { JoinMembership, type WhyAnswers } from "./JoinMembership";
 import { Crisis } from "./Crisis";
 import { AppShell, scrollToEnd } from "./AppShell";
 import { SportChoices } from "./SportChoices";
+import { LoginPrompt } from "./LoginPrompt";
 
 type Phase = "sport" | "ask" | "result" | "continue" | "crisis";
 
@@ -100,6 +101,7 @@ export function SevenWhys({
           setSport(null);
           setPhase("ask");
         }}
+        showLogin={membership && !signedIn}
       />
     );
   }
@@ -133,6 +135,7 @@ export function SevenWhys({
       error={error}
       sport={sport}
       onChangeSport={() => setPhase("sport")}
+      showLogin={membership && !signedIn}
     />
   );
 }
@@ -151,9 +154,11 @@ function pairAnswers(history: ChatMessage[]): WhyAnswers {
 
 /* ---------- Screen 0: Sport ---------- */
 
-function SportScreen({ onPick, onSkip }: { onPick: (sport: string) => void; onSkip: () => void }) {
+function SportScreen(props: { onPick: (sport: string) => void; onSkip: () => void; showLogin: boolean }) {
+  const { onPick, onSkip } = props;
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-6 pt-24 pb-16">
+    <main className="relative flex min-h-dvh flex-col items-center justify-center px-6 pt-24 pb-24">
+      {props.showLogin && <LoginPrompt />}
       <div className="rise flex w-full max-w-xl flex-col items-center">
         <h1 className="font-display text-center text-4xl font-bold tracking-tight sm:text-5xl">
           What&rsquo;s your sport?
@@ -180,6 +185,7 @@ function Landing(props: {
   error: string | null;
   sport: string | null;
   onChangeSport: () => void;
+  showLogin: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -197,9 +203,10 @@ function Landing(props: {
 
   return (
     <main
-      className="flex min-h-dvh cursor-text flex-col items-center justify-center px-6"
+      className="relative flex min-h-dvh cursor-text flex-col items-center justify-center px-6 pb-16"
       onClick={() => ref.current?.focus()}
     >
+      {props.showLogin && <LoginPrompt />}
       <div className="flex w-full max-w-xl flex-col items-center">
         <button
           type="button"
