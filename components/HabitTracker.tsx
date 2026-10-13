@@ -473,9 +473,10 @@ function Log({ data }: { data: Data }) {
 }
 
 /**
- * One row per day, one column per habit (must dos, then want, then wish).
- * A filled white box means done. "Month" shows every day of this month;
- * "Total progress" runs from the first tracked day and grows a row a day.
+ * Dates across the top, habits down the side (must dos, then want, then
+ * wish). A filled white box means done. "Month" shows every day of this
+ * month; "Total progress" runs from the first tracked day and grows a column
+ * a day. It opens scrolled to today.
  */
 function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number[] }) {
   const [mode, setMode] = useState<"month" | "total">("month");
@@ -490,10 +491,16 @@ function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number
 
   const habits = TIERS.flatMap((t) => props.habits.filter((h) => h.tier === t));
   const first = grid?.first ?? props.today;
-  const rows = gridDays(mode, props.today, grid?.first ?? null);
+  const days = gridDays(mode, props.today, grid?.first ?? null);
   const checkedOn = (day: string) => new Set(day === props.today ? props.todayChecked : (grid?.checked[day] ?? []));
-  const label = (day: string) =>
-    mode === "month" ? String(Number(day.slice(8))) : shortDate(day, { month: "short", day: "numeric" });
+  const scroller = useRef<HTMLDivElement>(null);
+
+  // Keep today in view: scroll so its column sits near the right edge.
+  useEffect(() => {
+    const el = scroller.current;
+    const cell = el?.querySelector<HTMLElement>("[data-today]");
+    if (el && cell) el.scrollLeft = Math.max(0, cell.offsetLeft + cell.offsetWidth - el.clientWidth + 24);
+  }, [mode, grid, days.length]);
 
   return (
     <section className="mt-8">
@@ -527,74 +534,79 @@ function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number
       {habits.length === 0 ? (
         <p className="mt-4 text-sm text-paper/60">Add habits on the Today tab to start your grid.</p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
+        <div ref={scroller} className="mt-4 overflow-x-auto overscroll-x-contain">
           <table className="border-separate border-spacing-[3px]">
             <thead>
               <tr>
-                <th />
-                {TIERS.map((t) => {
-                  const n = habits.filter((h) => h.tier === t).length;
-                  return n ? (
+                <th className="sticky left-0 z-10 bg-ink" />
+                {days.map((day, i) => {
+                  const showMonth = i === 0 || day.endsWith("-01");
+                  const isToday = day === props.today;
+                  return (
                     <th
-                      key={t}
-                      colSpan={n}
-                      className="border-b border-line pb-1 text-left text-[9px] font-normal tracking-[0.15em] text-mute uppercase"
-                    >
-                      {t}
-                    </th>
-                  ) : null;
-                })}
-              </tr>
-              <tr>
-                <th />
-                {habits.map((h) => (
-                  <th key={h.id} scope="col" className="h-24 align-bottom font-normal">
-                    <span
-                      className="mx-auto block max-h-24 overflow-hidden text-[10px] leading-tight text-ellipsis whitespace-nowrap text-paper/70"
-                      style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-                      title={h.title}
-                    >
-                      {h.title}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((day) => {
-                const done = checkedOn(day);
-                const outside = day > props.today || day < first;
-                const isToday = day === props.today;
-                return (
-                  <tr key={day}>
-                    <th
-                      scope="row"
-                      className={`pr-2 text-right text-[10px] font-normal whitespace-nowrap tabular-nums ${
+                      key={day}
+                      scope="col"
+                      data-today={isToday || undefined}
+                      className={`w-6 min-w-6 align-bottom text-[10px] font-normal tabular-nums ${
                         isToday ? "text-paper" : "text-mute"
                       }`}
                     >
-                      {label(day)}
+                      {showMonth && (
+                        <span className="block text-[8px] tracking-[0.1em] uppercase">
+                          {shortDate(day, { month: "short" })}
+                        </span>
+                      )}
+                      {Number(day.slice(8))}
                     </th>
-                    {habits.map((h) => {
-                      const on = !outside && done.has(h.id);
-                      return (
-                        <td key={h.id} className="p-0">
-                          <span
-                            role="img"
-                            aria-label={`${h.title}, ${shortDate(day, { month: "short", day: "numeric" })}: ${
-                              outside ? "not tracked" : on ? "done" : "not done"
-                            }`}
-                            className={`block h-6 w-6 border ${
-                              on ? "border-paper bg-paper" : outside ? "border-line/50" : "border-paper/35"
-                            }`}
-                          />
-                        </td>
-                      );
-                    })}
+                  );
+                })}
+              </tr>
+            </thead>
+            {TIERS.map((t) => {
+              const inTier = habits.filter((h) => h.tier === t);
+              if (inTier.length === 0) return null;
+              return (
+                <tbody key={t}>
+                  <tr>
+                    <th
+                      scope="rowgroup"
+                      className="sticky left-0 z-10 bg-ink pt-3 pr-2 text-left text-[9px] font-normal tracking-[0.15em] text-mute uppercase"
+                    >
+                      {TIER_LABEL[t]}
+                    </th>
+                    <td colSpan={days.length} />
                   </tr>
-                );
-              })}
-            </tbody>
+                  {inTier.map((h) => (
+                    <tr key={h.id}>
+                      <th
+                        scope="row"
+                        title={h.title}
+                        className="sticky left-0 z-10 bg-ink pr-2 text-left text-xs font-normal text-paper/80"
+                      >
+                        <span className="block max-w-28 truncate">{h.title}</span>
+                      </th>
+                      {days.map((day) => {
+                        const outside = day > props.today || day < first;
+                        const on = !outside && checkedOn(day).has(h.id);
+                        return (
+                          <td key={day} className="p-0">
+                            <span
+                              role="img"
+                              aria-label={`${h.title}, ${shortDate(day, { month: "short", day: "numeric" })}: ${
+                                outside ? "not tracked" : on ? "done" : "not done"
+                              }`}
+                              className={`block h-6 w-6 border ${
+                                on ? "border-paper bg-paper" : outside ? "border-line/50" : "border-paper/35"
+                              }`}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              );
+            })}
           </table>
         </div>
       )}
