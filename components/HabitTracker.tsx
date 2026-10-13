@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   HABIT_MAX_CHARS,
   habitsComplete,
@@ -149,7 +150,7 @@ export function HabitTracker(props: { nav: NavMe }) {
             }}
           />
         ) : (
-          <Log data={data} />
+          <Log data={data} onToggleToday={toggle} />
         )}
       </div>
     </AppShell>
@@ -400,8 +401,69 @@ function Sleep({ value, onChange }: { value: number | null; onChange: (hours: nu
 
 /* ---------- Layer 2: the log ---------- */
 
-function Log({ data }: { data: Data }) {
-  const [open, setOpen] = useState<string | null>(null);
+type Grid = { first: string | null; checked: Record<string, number[]> };
+const HOLD_MS = 3000;
+
+/**
+ * The grid and sleep graph. Holding anywhere on the log for 3 seconds offers
+ * "Edit log", which opens the month full screen so past days can be fixed.
+ */
+function Log({ data, onToggleToday }: { data: Data; onToggleToday: (h: Habit) => void }) {
+  const [grid, setGrid] = useState<Grid | null>(null);
+  const [menu, setMenu] = useState(false);
+  // The finger that held for 3 seconds is still down when the menu appears;
+  // its lift would count as a tap, so the menu only responds once it's up.
+  const [armed, setArmed] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/habits?grid=1&tz=${encodeURIComponent(tz())}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: Grid | null) => d && setGrid(d))
+      .catch(() => {});
+  }, []);
+
+  function startHold(e: React.PointerEvent) {
+    cancelHold();
+    if (menu || editing) return; // the menu and editor are portals, but their events still bubble here
+    const timer = setTimeout(() => {
+      hold.current = null;
+      navigator.vibrate?.(15);
+      setArmed(false);
+      setMenu(true);
+      const arm = () => setTimeout(() => setArmed(true), 350);
+      window.addEventListener("pointerup", arm, { once: true });
+      window.addEventListener("pointercancel", arm, { once: true });
+    }, HOLD_MS);
+    hold.current = { timer, x: e.clientX, y: e.clientY };
+  }
+  function cancelHold() {
+    if (hold.current) clearTimeout(hold.current.timer);
+    hold.current = null;
+  }
+  function moveHold(e: React.PointerEvent) {
+    const h = hold.current;
+    if (h && Math.hypot(e.clientX - h.x, e.clientY - h.y) > 10) cancelHold();
+  }
+
+  // Past days change here; today's boxes go through the Today checklist so both stay in step.
+  async function toggleDay(h: Habit, day: string) {
+    if (day === data.date) return onToggleToday(h);
+    const before = grid?.checked[day] ?? [];
+    const done = !before.includes(h.id);
+    const after = done ? [...before, h.id] : before.filter((id) => id !== h.id);
+    setGrid((g) => ({
+      first: !g?.first || day < g.first ? day : g.first,
+      checked: { ...(g?.checked ?? {}), [day]: after },
+    }));
+    try {
+      await post({ action: "check", id: h.id, done, day });
+    } catch {
+      setGrid((g) => (g ? { ...g, checked: { ...g.checked, [day]: before } } : g));
+    }
+  }
+
   const todayCounts: DayCounts = Object.fromEntries(
     TIERS.map((t) => {
       const inTier = data.habits.filter((h) => h.tier === t);
@@ -419,56 +481,110 @@ function Log({ data }: { data: Data }) {
   ];
 
   return (
-    <>
-      <HabitGrid today={data.date} habits={data.habits} todayChecked={data.checked} />
+    <div
+      onPointerDown={startHold}
+      onPointerUp={cancelHold}
+      onPointerLeave={cancelHold}
+      onPointerCancel={cancelHold}
+      onPointerMove={moveHold}
+      onContextMenu={(e) => e.preventDefault()}
+      className="select-none [-webkit-touch-callout:none]"
+    >
+      <HabitGrid today={data.date} habits={data.habits} todayChecked={data.checked} grid={grid} />
+      <p className="mt-3 text-xs text-mute">Hold the log for 3 seconds to edit it.</p>
       <SleepChart days={days.slice(0, 14).reverse()} today={data.date} />
-      <section className="mt-12">
-        <h2 className="border-b border-line pb-2 text-xs tracking-[0.2em] text-mute uppercase">Last 30 days</h2>
-        <ul>
-          {days.map((d) => {
-            const logged = d.counts !== null || d.sleep !== null;
-            const isOpen = open === d.day;
-            return (
-              <li key={d.day} className="border-b border-line/60">
-                <button
-                  type="button"
-                  onClick={() => setOpen(isOpen ? null : d.day)}
-                  disabled={!logged || d.checked.length === 0}
-                  aria-expanded={isOpen}
-                  className="flex w-full items-center gap-3 py-3 text-left disabled:cursor-default"
-                >
-                  <span className="w-24 shrink-0 text-sm text-paper/80">
-                    {d.day === data.date
-                      ? "Today"
-                      : shortDate(d.day, { weekday: "short", month: "short", day: "numeric" })}
-                  </span>
-                  {logged ? (
-                    <span className="flex flex-1 flex-wrap gap-x-3 gap-y-1 text-xs tracking-[0.1em] text-paper/70 uppercase tabular-nums">
-                      {d.counts &&
-                        TIERS.filter((t) => d.counts![t][1] > 0).map((t) => (
-                          <span key={t} className={d.counts![t][0] === d.counts![t][1] ? "text-paper" : ""}>
-                            {t} {d.counts![t][0]}/{d.counts![t][1]}
-                          </span>
-                        ))}
-                      {d.sleep !== null && <span className="text-mute">{sleepLabel(d.sleep)}</span>}
-                    </span>
-                  ) : (
-                    <span className="flex-1 text-xs text-mute">Not logged</span>
-                  )}
-                </button>
-                {isOpen && (
-                  <ul className="pb-3 pl-27 text-sm text-paper/70">
-                    {d.checked.map((t, i) => (
-                      <li key={i}>✓ {t}</li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-    </>
+
+      {menu && (
+        <div
+          className={`fixed inset-0 z-30 flex items-end bg-ink/70 ${armed ? "" : "pointer-events-none"}`}
+          onClick={() => setMenu(false)}
+        >
+          <div
+            role="dialog"
+            aria-label="Log options"
+            onClick={(e) => e.stopPropagation()}
+            className="rise mx-auto w-full max-w-md border-t border-line bg-ink px-6 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setMenu(false);
+                setEditing(true);
+              }}
+              className="w-full bg-paper py-4 text-sm tracking-[0.2em] text-ink uppercase"
+            >
+              Edit log
+            </button>
+            <button
+              type="button"
+              onClick={() => setMenu(false)}
+              className="mt-3 w-full py-3 text-xs tracking-[0.2em] text-paper/60 uppercase"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <EditLog
+          today={data.date}
+          habits={data.habits}
+          todayChecked={data.checked}
+          grid={grid}
+          onToggle={toggleDay}
+          onClose={() => setEditing(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Full-screen month grid where each box can be tapped to check or uncheck it. */
+function EditLog(props: {
+  today: string;
+  habits: Habit[];
+  todayChecked: number[];
+  grid: Grid | null;
+  onToggle: (h: Habit, day: string) => void;
+  onClose: () => void;
+}) {
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Edit log"
+      className="fixed inset-0 z-40 flex flex-col bg-ink pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] pb-[max(1rem,env(safe-area-inset-bottom))]"
+    >
+      <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-6 pb-4">
+        <div>
+          <p className="text-xs tracking-[0.2em] text-mute uppercase">Edit log</p>
+          <h2 className="font-display mt-1 text-2xl font-bold tracking-tight">
+            {shortDate(props.today, { month: "long", year: "numeric" })}
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={props.onClose}
+          className="border border-paper/40 px-5 py-2.5 text-xs tracking-[0.2em] uppercase hover:border-paper"
+        >
+          Done
+        </button>
+      </div>
+      <p className="mx-auto w-full max-w-2xl px-6 text-sm text-paper/60">Tap a box to check or uncheck it.</p>
+      <div className="mx-auto mt-4 w-full max-w-2xl flex-1 overflow-auto px-6">
+        <GridTable
+          days={gridDays("month", props.today, null)}
+          habits={props.habits}
+          today={props.today}
+          first={null}
+          checkedOn={(day) => new Set(day === props.today ? props.todayChecked : (props.grid?.checked[day] ?? []))}
+          onToggle={props.onToggle}
+          size="lg"
+        />
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -478,29 +594,9 @@ function Log({ data }: { data: Data }) {
  * month; "Total progress" runs from the first tracked day and grows a column
  * a day. It opens scrolled to today.
  */
-function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number[] }) {
+function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number[]; grid: Grid | null }) {
   const [mode, setMode] = useState<"month" | "total">("month");
-  const [grid, setGrid] = useState<{ first: string | null; checked: Record<string, number[]> } | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/habits?grid=1&tz=${encodeURIComponent(tz())}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { first: string | null; checked: Record<string, number[]> } | null) => d && setGrid(d))
-      .catch(() => {});
-  }, []);
-
-  const habits = TIERS.flatMap((t) => props.habits.filter((h) => h.tier === t));
-  const first = grid?.first ?? props.today;
-  const days = gridDays(mode, props.today, grid?.first ?? null);
-  const checkedOn = (day: string) => new Set(day === props.today ? props.todayChecked : (grid?.checked[day] ?? []));
-  const scroller = useRef<HTMLDivElement>(null);
-
-  // Keep today in view: scroll so its column sits near the right edge.
-  useEffect(() => {
-    const el = scroller.current;
-    const cell = el?.querySelector<HTMLElement>("[data-today]");
-    if (el && cell) el.scrollLeft = Math.max(0, cell.offsetLeft + cell.offsetWidth - el.clientWidth + 24);
-  }, [mode, grid, days.length]);
+  const days = gridDays(mode, props.today, props.grid?.first ?? null);
 
   return (
     <section className="mt-8">
@@ -530,87 +626,130 @@ function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number
           ))}
         </div>
       </div>
+      <div className="mt-4">
+        <GridTable
+          key={mode}
+          days={days}
+          habits={props.habits}
+          today={props.today}
+          first={props.grid?.first ?? props.today}
+          checkedOn={(day) => new Set(day === props.today ? props.todayChecked : (props.grid?.checked[day] ?? []))}
+        />
+      </div>
+    </section>
+  );
+}
 
-      {habits.length === 0 ? (
-        <p className="mt-4 text-sm text-paper/60">Add habits on the Today tab to start your grid.</p>
-      ) : (
-        <div ref={scroller} className="mt-4 overflow-x-auto overscroll-x-contain">
-          <table className="border-separate border-spacing-[3px]">
-            <thead>
-              <tr>
-                <th className="sticky left-0 z-10 bg-ink" />
-                {days.map((day, i) => {
-                  const showMonth = i === 0 || day.endsWith("-01");
-                  const isToday = day === props.today;
-                  return (
-                    <th
-                      key={day}
-                      scope="col"
-                      data-today={isToday || undefined}
-                      className={`w-6 min-w-6 align-bottom text-[10px] font-normal tabular-nums ${
-                        isToday ? "text-paper" : "text-mute"
-                      }`}
-                    >
-                      {showMonth && (
-                        <span className="block text-[8px] tracking-[0.1em] uppercase">
-                          {shortDate(day, { month: "short" })}
-                        </span>
-                      )}
-                      {Number(day.slice(8))}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            {TIERS.map((t) => {
-              const inTier = habits.filter((h) => h.tier === t);
-              if (inTier.length === 0) return null;
+/** The grid itself. With onToggle, each box (up to today) is a button. */
+function GridTable(props: {
+  days: string[];
+  habits: Habit[];
+  today: string;
+  /** Days before this are drawn faint; null means none are. */
+  first: string | null;
+  checkedOn: (day: string) => Set<number>;
+  onToggle?: (h: Habit, day: string) => void;
+  size?: "md" | "lg";
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const box = props.size === "lg" ? "h-8 w-8" : "h-6 w-6";
+  const habits = TIERS.flatMap((t) => props.habits.filter((h) => h.tier === t));
+
+  // Keep today in view: scroll so its column sits near the right edge.
+  useEffect(() => {
+    const el = scroller.current;
+    const cell = el?.querySelector<HTMLElement>("[data-today]");
+    if (el && cell) el.scrollLeft += cell.getBoundingClientRect().right - el.getBoundingClientRect().right + 8;
+  }, [props.days.length]);
+
+  if (habits.length === 0) {
+    return <p className="text-sm text-paper/60">Add habits on the Today tab to start your grid.</p>;
+  }
+
+  return (
+    <div ref={scroller} className="overflow-x-auto overscroll-x-contain">
+      <table className="border-separate border-spacing-[3px]">
+        <thead>
+          <tr>
+            <th className="sticky left-0 z-10 bg-ink" />
+            {props.days.map((day, i) => {
+              const showMonth = i === 0 || day.endsWith("-01");
+              const isToday = day === props.today;
               return (
-                <tbody key={t}>
-                  <tr>
-                    <th
-                      scope="rowgroup"
-                      className="sticky left-0 z-10 bg-ink pt-3 pr-2 text-left text-[9px] font-normal tracking-[0.15em] text-mute uppercase"
-                    >
-                      {TIER_LABEL[t]}
-                    </th>
-                    <td colSpan={days.length} />
-                  </tr>
-                  {inTier.map((h) => (
-                    <tr key={h.id}>
-                      <th
-                        scope="row"
-                        title={h.title}
-                        className="sticky left-0 z-10 bg-ink pr-2 text-left text-xs font-normal text-paper/80"
-                      >
-                        <span className="block max-w-28 truncate">{h.title}</span>
-                      </th>
-                      {days.map((day) => {
-                        const outside = day > props.today || day < first;
-                        const on = !outside && checkedOn(day).has(h.id);
-                        return (
-                          <td key={day} className="p-0">
-                            <span
-                              role="img"
-                              aria-label={`${h.title}, ${shortDate(day, { month: "short", day: "numeric" })}: ${
-                                outside ? "not tracked" : on ? "done" : "not done"
-                              }`}
-                              className={`block h-6 w-6 border ${
-                                on ? "border-paper bg-paper" : outside ? "border-line/50" : "border-paper/35"
-                              }`}
-                            />
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
+                <th
+                  key={day}
+                  scope="col"
+                  data-today={isToday || undefined}
+                  className={`align-bottom text-[10px] font-normal tabular-nums ${isToday ? "text-paper" : "text-mute"}`}
+                >
+                  {showMonth && (
+                    <span className="block text-[8px] tracking-[0.1em] uppercase">
+                      {shortDate(day, { month: "short" })}
+                    </span>
+                  )}
+                  {Number(day.slice(8))}
+                </th>
               );
             })}
-          </table>
-        </div>
-      )}
-    </section>
+          </tr>
+        </thead>
+        {TIERS.map((t) => {
+          const inTier = habits.filter((h) => h.tier === t);
+          if (inTier.length === 0) return null;
+          return (
+            <tbody key={t}>
+              <tr>
+                <th
+                  scope="rowgroup"
+                  className="sticky left-0 z-10 bg-ink pt-3 pr-2 text-left text-[9px] font-normal tracking-[0.15em] text-mute uppercase"
+                >
+                  {TIER_LABEL[t]}
+                </th>
+                <td colSpan={props.days.length} />
+              </tr>
+              {inTier.map((h) => (
+                <tr key={h.id}>
+                  <th
+                    scope="row"
+                    title={h.title}
+                    className="sticky left-0 z-10 bg-ink pr-2 text-left text-xs font-normal text-paper/80"
+                  >
+                    <span className="block max-w-28 truncate">{h.title}</span>
+                  </th>
+                  {props.days.map((day) => {
+                    const future = day > props.today;
+                    const outside = future || (props.first !== null && day < props.first);
+                    const on = !future && props.checkedOn(day).has(h.id);
+                    const label = `${h.title}, ${shortDate(day, { month: "short", day: "numeric" })}: ${
+                      future ? "not yet" : on ? "done" : "not done"
+                    }`;
+                    const look = `block ${box} border ${
+                      on ? "border-paper bg-paper" : outside ? "border-line/50" : "border-paper/35"
+                    }`;
+                    return (
+                      <td key={day} className="p-0">
+                        {props.onToggle && !future ? (
+                          <button
+                            type="button"
+                            role="checkbox"
+                            aria-checked={on}
+                            aria-label={label}
+                            onClick={() => props.onToggle!(h, day)}
+                            className={`${look} transition-colors active:opacity-70`}
+                          />
+                        ) : (
+                          <span role="img" aria-label={label} className={look} />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          );
+        })}
+      </table>
+    </div>
   );
 }
 
