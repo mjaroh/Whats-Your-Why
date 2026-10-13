@@ -7,6 +7,7 @@ import { cleanSleep, cleanTitle, HABIT_MAX_CHARS, TIERS, todayStatus } from "@/l
 import {
   activeHabits,
   addHabit,
+  habitGrid,
   habitLog,
   refreshDay,
   removeHabit,
@@ -32,6 +33,10 @@ export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
   const { date, weekday } = localDay(params.get("tz") ?? "UTC");
   // The profile button only needs how today is going.
+  if (params.get("grid")) {
+    const [habits, grid] = await Promise.all([activeHabits(id), habitGrid(id, date)]);
+    return NextResponse.json({ date, habits, ...grid }, { headers: { "Cache-Control": "no-store" } });
+  }
   if (params.get("summary")) {
     const [habits, day] = await Promise.all([activeHabits(id), today(id, date)]);
     return NextResponse.json(

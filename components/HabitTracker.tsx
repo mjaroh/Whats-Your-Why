@@ -10,6 +10,7 @@ import {
   TIER_MAX,
   TIER_MIN,
   TIERS,
+  gridDays,
   type DayCounts,
   type Habit,
   type Tier,
@@ -419,6 +420,7 @@ function Log({ data }: { data: Data }) {
 
   return (
     <>
+      <HabitGrid today={data.date} habits={data.habits} todayChecked={data.checked} />
       <SleepChart days={days.slice(0, 14).reverse()} today={data.date} />
       <section className="mt-12">
         <h2 className="border-b border-line pb-2 text-xs tracking-[0.2em] text-mute uppercase">Last 30 days</h2>
@@ -467,6 +469,136 @@ function Log({ data }: { data: Data }) {
         </ul>
       </section>
     </>
+  );
+}
+
+/**
+ * One row per day, one column per habit (must dos, then want, then wish).
+ * A filled white box means done. "Month" shows every day of this month;
+ * "Total progress" runs from the first tracked day and grows a row a day.
+ */
+function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number[] }) {
+  const [mode, setMode] = useState<"month" | "total">("month");
+  const [grid, setGrid] = useState<{ first: string | null; checked: Record<string, number[]> } | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/habits?grid=1&tz=${encodeURIComponent(tz())}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { first: string | null; checked: Record<string, number[]> } | null) => d && setGrid(d))
+      .catch(() => {});
+  }, []);
+
+  const habits = TIERS.flatMap((t) => props.habits.filter((h) => h.tier === t));
+  const first = grid?.first ?? props.today;
+  const rows = gridDays(mode, props.today, grid?.first ?? null);
+  const checkedOn = (day: string) => new Set(day === props.today ? props.todayChecked : (grid?.checked[day] ?? []));
+  const label = (day: string) =>
+    mode === "month" ? String(Number(day.slice(8))) : shortDate(day, { month: "short", day: "numeric" });
+
+  return (
+    <section className="mt-8">
+      <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">
+          {mode === "month" ? shortDate(props.today, { month: "long" }) : "Since day one"}
+        </h2>
+        <div className="flex border border-line" role="tablist" aria-label="Grid view">
+          {(
+            [
+              ["month", "Month"],
+              ["total", "Total progress"],
+            ] as const
+          ).map(([m, text]) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => setMode(m)}
+              className={`px-3 py-1.5 text-[10px] tracking-[0.15em] uppercase transition-colors ${
+                mode === m ? "bg-paper text-ink" : "text-paper/60 hover:text-paper"
+              }`}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {habits.length === 0 ? (
+        <p className="mt-4 text-sm text-paper/60">Add habits on the Today tab to start your grid.</p>
+      ) : (
+        <div className="mt-4 overflow-x-auto">
+          <table className="border-separate border-spacing-[3px]">
+            <thead>
+              <tr>
+                <th />
+                {TIERS.map((t) => {
+                  const n = habits.filter((h) => h.tier === t).length;
+                  return n ? (
+                    <th
+                      key={t}
+                      colSpan={n}
+                      className="border-b border-line pb-1 text-left text-[9px] font-normal tracking-[0.15em] text-mute uppercase"
+                    >
+                      {t}
+                    </th>
+                  ) : null;
+                })}
+              </tr>
+              <tr>
+                <th />
+                {habits.map((h) => (
+                  <th key={h.id} scope="col" className="h-24 align-bottom font-normal">
+                    <span
+                      className="mx-auto block max-h-24 overflow-hidden text-[10px] leading-tight text-ellipsis whitespace-nowrap text-paper/70"
+                      style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                      title={h.title}
+                    >
+                      {h.title}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((day) => {
+                const done = checkedOn(day);
+                const outside = day > props.today || day < first;
+                const isToday = day === props.today;
+                return (
+                  <tr key={day}>
+                    <th
+                      scope="row"
+                      className={`pr-2 text-right text-[10px] font-normal whitespace-nowrap tabular-nums ${
+                        isToday ? "text-paper" : "text-mute"
+                      }`}
+                    >
+                      {label(day)}
+                    </th>
+                    {habits.map((h) => {
+                      const on = !outside && done.has(h.id);
+                      return (
+                        <td key={h.id} className="p-0">
+                          <span
+                            role="img"
+                            aria-label={`${h.title}, ${shortDate(day, { month: "short", day: "numeric" })}: ${
+                              outside ? "not tracked" : on ? "done" : "not done"
+                            }`}
+                            className={`block h-6 w-6 border ${
+                              on ? "border-paper bg-paper" : outside ? "border-line/50" : "border-paper/35"
+                            }`}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 

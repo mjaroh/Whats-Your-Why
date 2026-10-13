@@ -70,3 +70,33 @@ export function todayStatus(habits: Habit[], checked: number[], sleep: number | 
   if (habits.every((h) => done.has(h.id))) return "done";
   return "musts";
 }
+
+/** YYYY-MM-DD plus n days (calendar math, no time zones). */
+export function addDays(day: string, n: number): string {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * The rows of the habit grid, oldest first.
+ * - "month": every day of today's month, including the days still to come.
+ * - "total": from the first tracked day through today (one more row each day).
+ */
+export function gridDays(mode: "month" | "total", today: string, first: string | null): string[] {
+  const out: string[] = [];
+  if (mode === "month") {
+    let d = `${today.slice(0, 7)}-01`;
+    while (d.slice(0, 7) === today.slice(0, 7)) {
+      out.push(d);
+      d = addDays(d, 1);
+    }
+    return out;
+  }
+  let d = first && first < today ? first : today;
+  while (d <= today) {
+    out.push(d);
+    d = addDays(d, 1);
+  }
+  return out;
+}
