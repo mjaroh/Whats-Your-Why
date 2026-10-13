@@ -100,3 +100,11 @@ export function gridDays(mode: "month" | "total", today: string, first: string |
   }
   return out;
 }
+
+/** How far back the log can be edited. */
+export const EDIT_DAYS_BACK = 62;
+
+/** A day can be edited if it's today or within the last couple of months, never the future. */
+export function canEditDay(day: string, today: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) && day <= today && day >= addDays(today, -EDIT_DAYS_BACK);
+}

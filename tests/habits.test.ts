@@ -54,3 +54,12 @@ test("grid rows: the whole month, or every day since tracking began", async () =
   assert.deepEqual(total, ["2026-01-30", "2026-01-31", "2026-02-01", "2026-02-02"]);
   assert.deepEqual(gridDays("total", "2026-02-02", null), ["2026-02-02"]);
 });
+
+test("the log can be edited for past days, not the future", async () => {
+  const { canEditDay } = await import("../lib/habitRules.ts");
+  assert.equal(canEditDay("2026-10-13", "2026-10-13"), true);
+  assert.equal(canEditDay("2026-10-01", "2026-10-13"), true);
+  assert.equal(canEditDay("2026-10-14", "2026-10-13"), false);
+  assert.equal(canEditDay("2026-01-01", "2026-10-13"), false);
+  assert.equal(canEditDay("nope", "2026-10-13"), false);
+});

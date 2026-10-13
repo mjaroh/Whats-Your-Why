@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAthlete, isSetUp } from "@/lib/athletes";
 import { localDay } from "@/lib/coach/time";
-import { cleanSleep, cleanTitle, HABIT_MAX_CHARS, TIERS, todayStatus } from "@/lib/habitRules";
+import { canEditDay, cleanSleep, cleanTitle, HABIT_MAX_CHARS, TIERS, todayStatus } from "@/lib/habitRules";
 import {
   activeHabits,
   addHabit,
@@ -59,7 +59,17 @@ const Body = z.discriminatedUnion("action", [
     title: z.string().max(HABIT_MAX_CHARS * 2),
   }),
   z.object({ action: z.literal("remove"), tz: z.string(), id: z.number().int().positive() }),
-  z.object({ action: z.literal("check"), tz: z.string(), id: z.number().int().positive(), done: z.boolean() }),
+  z.object({
+    action: z.literal("check"),
+    tz: z.string(),
+    id: z.number().int().positive(),
+    done: z.boolean(),
+    /** Editing the log: a past day (YYYY-MM-DD). Omitted means today. */
+    day: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  }),
   z.object({ action: z.literal("sleep"), tz: z.string(), hours: z.number() }),
 ]);
 
@@ -90,8 +100,13 @@ export async function POST(req: Request) {
       await removeHabit(id, body.id);
       await refreshDay(id, date);
       return NextResponse.json({ ok: true });
-    case "check":
-      return NextResponse.json(await setChecked(id, date, body.id, body.done));
+    case "check": {
+      const day = body.day ?? date;
+      if (!canEditDay(day, date)) {
+        return NextResponse.json({ error: "That day can't be changed." }, { status: 400 });
+      }
+      return NextResponse.json(await setChecked(id, day, body.id, body.done));
+    }
     case "sleep":
       await setSleep(id, date, cleanSleep(body.hours));
       return NextResponse.json({ ok: true });
