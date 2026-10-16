@@ -1,15 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  addCheckin,
-  getAthlete,
-  getWhy,
-  hasCheckin,
-  isMember,
-  recentMessages,
-} from "@/lib/athletes";
+import { addCheckin, getAthlete, getWhy, hasCheckin, isMember, recentMessages } from "@/lib/athletes";
 import { generateCheckin } from "@/lib/coach/claude";
+import { habitSnapshot } from "@/lib/habits";
 import { localDay } from "@/lib/coach/time";
 
 export const runtime = "nodejs";
@@ -29,11 +23,19 @@ export async function POST(req: Request) {
   if (await hasCheckin(userId, date)) return NextResponse.json({ created: false });
 
   try {
-    const [why, history] = await Promise.all([getWhy(userId), recentMessages(userId, 60)]);
-    const recentCheckins = history.filter((m) => m.kind === "checkin").slice(-5).map((m) => m.content);
+    const [why, history, habits] = await Promise.all([
+      getWhy(userId),
+      recentMessages(userId, 60),
+      habitSnapshot(userId, date).catch(() => null),
+    ]);
+    const recentCheckins = history
+      .filter((m) => m.kind === "checkin")
+      .slice(-5)
+      .map((m) => m.content);
     const text = await generateCheckin({
       firstName: athlete!.first_name,
       why,
+      habits,
       weekday,
       recentCheckins,
     });

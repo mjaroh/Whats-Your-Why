@@ -12,6 +12,7 @@ export type AthleteTurn = string | Anthropic.ContentBlockParam[];
 export function streamCoachReply(opts: {
   firstName: string | null;
   why: Why | null;
+  habits?: string | null;
   history: CoachMessage[];
   message: AthleteTurn;
 }) {
@@ -31,7 +32,7 @@ export function streamCoachReply(opts: {
     system: [
       {
         type: "text",
-        text: coachSystemPrompt(opts.firstName, opts.why),
+        text: coachSystemPrompt(opts.firstName, opts.why, opts.habits ?? null),
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -43,16 +44,15 @@ export function streamCoachReply(opts: {
 export async function generateCheckin(opts: {
   firstName: string | null;
   why: Why | null;
+  habits?: string | null;
   weekday: string;
   recentCheckins: string[];
 }): Promise<string> {
   const response = await anthropic().messages.create({
     model: MODEL,
     max_tokens: 2000,
-    system: coachSystemPrompt(opts.firstName, opts.why),
-    messages: [
-      { role: "user", content: checkinPrompt(opts.firstName, opts.weekday, opts.recentCheckins) },
-    ],
+    system: coachSystemPrompt(opts.firstName, opts.why, opts.habits ?? null),
+    messages: [{ role: "user", content: checkinPrompt(opts.firstName, opts.weekday, opts.recentCheckins) }],
     output_config: { effort: "low" },
   });
   if (response.stop_reason === "refusal") throw new Error("check-in refused");

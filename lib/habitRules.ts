@@ -108,3 +108,70 @@ export const EDIT_DAYS_BACK = 62;
 export function canEditDay(day: string, today: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(day) && day <= today && day >= addDays(today, -EDIT_DAYS_BACK);
 }
+
+export type TrackedDay = { day: string; checked: number[]; sleep: number | null };
+
+const fmtDay = (day: string, opts: Intl.DateTimeFormatOptions) =>
+  new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", ...opts });
+
+/**
+ * The athlete's habit tracker and sleep, written out for the coach.
+ * `days` runs oldest to newest and ends with today; missing days count as
+ * not tracked. Returns null when there's nothing to say yet.
+ */
+export function describeHabits(habits: Habit[], days: TrackedDay[], today: string): string | null {
+  const byDay = new Map(days.map((d) => [d.day, d]));
+  const window: string[] = [];
+  for (let i = 13; i >= 0; i--) window.push(addDays(today, -i));
+  const logged = window.filter((d) => byDay.has(d));
+  if (habits.length === 0 && !days.some((d) => d.sleep !== null)) return null;
+
+  const lines: string[] = [];
+  const t = byDay.get(today);
+  const done = new Set(t?.checked ?? []);
+  const musts = habits.filter((h) => h.tier === "must");
+  lines.push(
+    `Today (${fmtDay(today, { weekday: "long", month: "short", day: "numeric" })}): ` +
+      `${t?.sleep != null ? `slept ${sleepLabel(t.sleep)} last night` : "sleep not logged yet"}; ` +
+      `${musts.filter((h) => done.has(h.id)).length} of ${musts.length} must dos done so far.`,
+  );
+
+  if (habits.length) {
+    lines.push("", `Habits over the last 14 days (${logged.length} of 14 days opened the tracker):`);
+    for (const tier of TIERS) {
+      const inTier = habits.filter((h) => h.tier === tier);
+      if (!inTier.length) continue;
+      lines.push(`${TIER_LABEL[tier]}:`);
+      for (const h of inTier) {
+        const count = window.filter((d) => byDay.get(d)?.checked.includes(h.id)).length;
+        // Streak counts back from yesterday, plus today if it's already done.
+        let streak = 0;
+        for (let i = done.has(h.id) ? 0 : 1; i < 60; i++) {
+          if (byDay.get(addDays(today, -i))?.checked.includes(h.id)) streak++;
+          else break;
+        }
+        lines.push(
+          `- ${h.title}: done ${count} of 14 days` +
+            `${done.has(h.id) ? ", done today" : ""}${streak >= 2 ? `, ${streak}-day streak` : ""}`,
+        );
+      }
+    }
+  }
+
+  const nights = window.map((d) => ({ d, h: byDay.get(d)?.sleep ?? null })).filter((n) => n.h !== null);
+  if (nights.length) {
+    const avg = nights.reduce((s, n) => s + n.h!, 0) / nights.length;
+    lines.push(
+      "",
+      `Sleep over the last 14 days: ${nights.length} nights logged, average ${avg.toFixed(1)} hrs.`,
+      `Recent nights: ${nights
+        .slice(-7)
+        .reverse()
+        .map((n) => `${fmtDay(n.d, { month: "short", day: "numeric" })} ${sleepLabel(n.h!)}`)
+        .join(", ")}.`,
+    );
+  } else {
+    lines.push("", "Sleep: nothing logged in the last 14 days.");
+  }
+  return lines.join("\n");
+}

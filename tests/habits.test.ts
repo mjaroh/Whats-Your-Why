@@ -63,3 +63,20 @@ test("the log can be edited for past days, not the future", async () => {
   assert.equal(canEditDay("2026-01-01", "2026-10-13"), false);
   assert.equal(canEditDay("nope", "2026-10-13"), false);
 });
+
+test("the coach gets a readable summary of habits and sleep", async () => {
+  const { describeHabits } = await import("../lib/habitRules.ts");
+  const habits = [h(1, "must"), h(2, "must"), h(3, "want")];
+  const days = [
+    { day: "2026-10-10", checked: [1], sleep: 6 },
+    { day: "2026-10-11", checked: [1, 2], sleep: 8 },
+    { day: "2026-10-12", checked: [1, 3], sleep: null },
+    { day: "2026-10-13", checked: [1], sleep: 7.5 },
+  ];
+  const text = describeHabits(habits, days, "2026-10-13")!;
+  assert.match(text, /Today \(Tuesday, Oct 13\): slept 7\.5 hrs last night; 1 of 2 must dos done so far\./);
+  assert.match(text, /- h1: done 4 of 14 days, done today, 4-day streak/);
+  assert.match(text, /- h2: done 1 of 14 days$/m);
+  assert.match(text, /3 nights logged, average 7\.2 hrs/);
+  assert.equal(describeHabits([], [], "2026-10-13"), null);
+});

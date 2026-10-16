@@ -4,6 +4,8 @@ import { z } from "zod";
 import { addMessage, getAthlete, getWhy, isMember, recentMessages } from "@/lib/athletes";
 import { classifySafety } from "@/lib/claude";
 import { coachReplyResponse } from "@/lib/coach/respond";
+import { localDay } from "@/lib/coach/time";
+import { habitSnapshot } from "@/lib/habits";
 import { keywordScreen } from "@/lib/keywords";
 import { rateLimit } from "@/lib/ratelimit";
 import { clientIp, hashIp } from "@/lib/request";
@@ -13,7 +15,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const Body = z.object({ message: z.string().trim().min(1).max(2000) });
+const Body = z.object({ message: z.string().trim().min(1).max(2000), tz: z.string().max(64).optional() });
 
 export async function POST(req: Request) {
   const { userId } = await auth();
@@ -23,16 +25,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Your membership isn't active." }, { status: 402 });
   }
   if (!(await rateLimit(`coach:${userId}`, 40, 60 * 60_000))) {
-    return NextResponse.json(
-      { error: "That's a lot for one hour. Take a break and come back soon." },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: "That's a lot for one hour. Take a break and come back soon." }, { status: 429 });
   }
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Message is empty or too long." }, { status: 400 });
   const message = parsed.data.message;
 
-  const [history, why] = await Promise.all([recentMessages(userId, 40), getWhy(userId)]);
+  const [history, why, habits] = await Promise.all([
+    recentMessages(userId, 40),
+    getWhy(userId),
+    habitSnapshot(userId, localDay(parsed.data.tz ?? "UTC").date).catch(() => null),
+  ]);
 
   // Same safety checks as the Seven Whys, run before anything is generated.
   const crisis = async (source: "keyword" | "classifier", category: string) => {
@@ -61,6 +64,7 @@ export async function POST(req: Request) {
     athleteId: userId,
     firstName: athlete!.first_name,
     why,
+    habits,
     history,
     turn: message,
     userMessageId,
