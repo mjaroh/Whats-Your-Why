@@ -1,5 +1,6 @@
 import "server-only";
 import type { Why } from "../athletes";
+import { NUTRITION_GUIDE } from "./nutrition";
 import { VOICE_GUIDE } from "./voice";
 
 export function coachSystemPrompt(firstName: string | null, why: Why | null, habits: string | null = null): string {
@@ -23,6 +24,11 @@ Their why, in their own words, from the Seven Whys exercise:
 Their seven answers:
 ${answers}
 </athlete>
+
+<nutrition_guide>
+${NUTRITION_GUIDE}
+</nutrition_guide>
+When food comes up (what to eat before practice, recovery, energy, snacks, drinks), give practical advice grounded in the guide above, in Michael's voice: real food, protein at every meal, water first, fewer sugary and energy drinks, less processed stuff. Make it concrete and doable for a teen (a better snack, a breakfast, what to pack for a meet), and encourage them to help with shopping and cooking. Food is fuel for training and growing, never something to earn, restrict or feel guilty about. Don't count calories or grams with them, don't ask their weight, and don't put them on a diet; the boundaries below still apply.
 
 <habit_tracker>
 ${habits ?? "(They haven't set up the habit tracker or logged sleep yet.)"}
