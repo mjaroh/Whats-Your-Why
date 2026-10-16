@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "./db";
-import { dayCounts, TIER_MAX, type DayCounts, type Habit, type Tier } from "./habitRules";
+import { dayCounts, describeHabits, TIER_MAX, type DayCounts, type Habit, type Tier } from "./habitRules";
 
 // The habit tracker. Each athlete writes their own Must / Want / Wish habits.
 // Every local day gets its own row (the checklist starts blank at midnight),
@@ -133,4 +133,17 @@ export async function habitGrid(athleteId: string, today: string) {
     first: rows[0]?.day ?? null,
     checked: Object.fromEntries(rows.map((r) => [r.day, r.checked])) as Record<string, number[]>,
   };
+}
+
+/** The habit tracker and sleep log, written out for the coach (or null if nothing's tracked). */
+export async function habitSnapshot(athleteId: string, today: string): Promise<string | null> {
+  const sql = await db();
+  const [habits, rows] = await Promise.all([
+    activeHabits(athleteId),
+    sql<{ day: string; checked: number[]; sleep: number | null }[]>`
+      SELECT to_char(day, 'YYYY-MM-DD') AS day, checked, sleep_hours AS sleep FROM habit_days
+      WHERE athlete_id = ${athleteId} AND day <= ${today}::date AND day > ${today}::date - 60
+      ORDER BY day`,
+  ]);
+  return describeHabits(habits, rows, today);
 }

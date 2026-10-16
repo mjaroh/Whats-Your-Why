@@ -4,6 +4,8 @@ import { z } from "zod";
 import { addMessage, getAthlete, getWhy, isMember, recentMessages } from "@/lib/athletes";
 import { classifySafety } from "@/lib/claude";
 import { coachReplyResponse } from "@/lib/coach/respond";
+import { localDay } from "@/lib/coach/time";
+import { habitSnapshot } from "@/lib/habits";
 import { keywordScreen } from "@/lib/keywords";
 import { clientIp, hashIp } from "@/lib/request";
 import { logCrisisEvent } from "@/lib/safety";
@@ -17,6 +19,7 @@ const Body = z.object({
   mediaId: z.number().int().positive(),
   frames: FramesBody,
   note: z.string().trim().max(2000).default(""),
+  tz: z.string().max(64).optional(),
 });
 
 // Step 3 for coach videos: the upload is done; the coach looks at the frames
@@ -35,7 +38,11 @@ export async function POST(req: Request) {
   const media = await uploadedVideo(mediaId, userId, "coach");
   if (!media) return NextResponse.json({ error: "The upload didn't finish. Try again." }, { status: 400 });
 
-  const [history, why] = await Promise.all([recentMessages(userId, 40), getWhy(userId)]);
+  const [history, why, habits] = await Promise.all([
+    recentMessages(userId, 40),
+    getWhy(userId),
+    habitSnapshot(userId, localDay(parsed.data.tz ?? "UTC").date).catch(() => null),
+  ]);
 
   // The note goes through the same safety checks as any coach message.
   if (note) {
@@ -70,6 +77,7 @@ export async function POST(req: Request) {
     athleteId: userId,
     firstName: athlete!.first_name,
     why,
+    habits,
     history,
     turn,
     userMessageId,

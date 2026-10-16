@@ -13,6 +13,7 @@ export function coachReplyResponse(opts: {
   athleteId: string;
   firstName: string | null;
   why: Why | null;
+  habits?: string | null;
   history: CoachMessage[];
   turn: AthleteTurn;
   userMessageId: number;
@@ -20,6 +21,7 @@ export function coachReplyResponse(opts: {
   const stream = streamCoachReply({
     firstName: opts.firstName,
     why: opts.why,
+    habits: opts.habits,
     history: opts.history,
     message: opts.turn,
   });

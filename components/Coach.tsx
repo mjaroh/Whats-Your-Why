@@ -127,7 +127,7 @@ export function Coach(props: {
         fetch("/api/coach", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text }),
+          body: JSON.stringify({ message: text, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
         }),
       onFail: () => setDraft(text),
     });
@@ -155,7 +155,7 @@ export function Coach(props: {
         fetch("/api/coach/video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mediaId, frames, note }),
+          body: JSON.stringify({ mediaId, frames, note, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
         }),
       onFail: () => setDraft(note),
     });
