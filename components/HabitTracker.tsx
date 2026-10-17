@@ -18,6 +18,7 @@ import {
 } from "@/lib/habitRules";
 import { AppNav, type NavMe } from "./AppNav";
 import { AppShell } from "./AppShell";
+import { Reminders } from "./Reminders";
 
 type LogDay = { day: string; counts: DayCounts | null; checked: string[]; sleep: number | null };
 type Data = {
@@ -209,6 +210,7 @@ function Today(props: {
         />
       ))}
 
+      <Reminders />
       <p className="mt-10 text-xs leading-relaxed text-mute">
         Your checklist starts fresh at midnight. Each day is saved to your log.
       </p>
