@@ -35,6 +35,11 @@ export default async function ProfilePage() {
       why={why?.statement ?? null}
       sport={why?.sport ?? null}
       habitTiers={habits.map((h) => h.tier)}
+      bigDay={
+        athlete!.big_day_title && athlete!.big_day_date
+          ? { title: athlete!.big_day_title, date: athlete!.big_day_date }
+          : null
+      }
       videos={videos.map((v) => ({
         mediaId: v.media_id,
         note: v.note,

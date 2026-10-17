@@ -1,3 +1,5 @@
+import { countdown } from "./countdown.ts";
+
 // LA 2028: the countdown on the profile, for athletes in a Summer Olympic sport.
 
 /** Midnight at the start of July 14, 2028 in Los Angeles (PDT, UTC-7). */
@@ -71,12 +73,5 @@ export function isSummerOlympicSport(sport: string | null | undefined): boolean 
 
 /** Days, hours, minutes and seconds until LA 2028 starts (all zero once it has). */
 export function untilLA28(now: number) {
-  const left = Math.max(0, Math.floor((LA28_START - now) / 1000));
-  return {
-    done: left === 0,
-    days: Math.floor(left / 86_400),
-    hours: Math.floor((left % 86_400) / 3_600),
-    minutes: Math.floor((left % 3_600) / 60),
-    seconds: left % 60,
-  };
+  return countdown(LA28_START, now);
 }

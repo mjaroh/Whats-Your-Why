@@ -7,7 +7,8 @@ import { ProfileMenu } from "./ProfileMenu";
 import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 import { SportChoices } from "./SportChoices";
-import { LA28Countdown } from "./LA28Countdown";
+import { BigDayCountdown, LA28Countdown } from "./LA28Countdown";
+import { BIG_DAY_TITLE_MAX } from "@/lib/bigDay";
 import { isSummerOlympicSport } from "@/lib/olympics";
 import { habitsComplete, type Tier, type TodayStatus } from "@/lib/habitRules";
 
@@ -31,6 +32,7 @@ export function Profile(props: {
   why: string | null;
   sport: string | null;
   habitTiers: Tier[];
+  bigDay: { title: string; date: string } | null;
   videos: CoachVideo[];
   favorites: Favorite[];
 }) {
@@ -40,6 +42,8 @@ export function Profile(props: {
   const [showWhy, setShowWhy] = useState(false);
   const [sport, setSport] = useState(props.sport);
   const [editSport, setEditSport] = useState(false);
+  const [bigDay, setBigDay] = useState(props.bigDay);
+  const [editBigDay, setEditBigDay] = useState(false);
   const [sportError, setSportError] = useState<string | null>(null);
   const [openVideo, setOpenVideo] = useState<CoachVideo | null>(null);
   const [favorites, setFavorites] = useState(props.favorites);
@@ -133,6 +137,14 @@ export function Profile(props: {
             {sport ?? "Add your sport"}
           </button>
           {isSummerOlympicSport(sport) && <LA28Countdown className="mt-6" />}
+          {bigDay && (
+            <BigDayCountdown
+              title={bigDay.title}
+              date={bigDay.date}
+              onEdit={() => setEditBigDay(true)}
+              className="mt-4"
+            />
+          )}
           <button
             type="button"
             onClick={() => setShowWhy(true)}
@@ -152,6 +164,7 @@ export function Profile(props: {
             },
             { label: "Add your sport", done: Boolean(sport), onClick: () => setEditSport(true) },
             { label: "Find your why", done: Boolean(props.why), href: "/?retake=1" },
+            { label: "Set your big day", done: Boolean(bigDay), onClick: () => setEditBigDay(true) },
             {
               label: "Set up your habits",
               done: habitsComplete(props.habitTiers.map((tier) => ({ tier }))),
@@ -268,6 +281,18 @@ export function Profile(props: {
         </Overlay>
       )}
 
+      {editBigDay && (
+        <Overlay onClose={() => setEditBigDay(false)}>
+          <BigDayForm
+            current={bigDay}
+            onSaved={(next) => {
+              setBigDay(next);
+              setEditBigDay(false);
+            }}
+          />
+        </Overlay>
+      )}
+
       {editSport && (
         <Overlay onClose={() => setEditSport(false)}>
           <p className="text-xs tracking-[0.2em] text-mute uppercase">Your sport</p>
@@ -328,6 +353,89 @@ function HabitButton() {
       HABIT TRACKER
       {look.status && <span className="sr-only">. {look.status}</span>}
     </a>
+  );
+}
+
+/** Name the day that matters and pick its date. */
+function BigDayForm(props: {
+  current: { title: string; date: string } | null;
+  onSaved: (next: { title: string; date: string } | null) => void;
+}) {
+  const [title, setTitle] = useState(props.current?.title ?? "");
+  const [date, setDate] = useState(props.current?.date ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD, local
+
+  async function save(body: { title: string | null; date: string | null }) {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/account/bigday", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as { ok?: boolean; error?: string; title?: string } | null;
+    setBusy(false);
+    if (!data?.ok) {
+      setError(data?.error ?? "Couldn't save that. Try again.");
+      return;
+    }
+    props.onSaved(body.title && body.date ? { title: data.title ?? body.title, date: body.date } : null);
+  }
+
+  const field =
+    "mt-2 w-full border-b border-line bg-transparent py-2 text-lg text-paper outline-none focus:border-paper";
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (title.trim() && date) void save({ title: title.trim(), date });
+      }}
+    >
+      <p className="text-xs tracking-[0.2em] text-mute uppercase">Your big day</p>
+      <p className="mt-4 leading-relaxed text-paper/70">
+        The day you&rsquo;re training for: a meet, tryouts, a first game. It counts down on your profile.
+      </p>
+      <label className="mt-8 block text-xs tracking-[0.2em] text-mute uppercase">
+        What is it?
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={BIG_DAY_TITLE_MAX}
+          placeholder="State meet"
+          className={`${field} normal-case tracking-normal placeholder:text-paper/25`}
+        />
+      </label>
+      <label className="mt-6 block text-xs tracking-[0.2em] text-mute uppercase">
+        When?
+        <input
+          type="date"
+          value={date}
+          min={props.current?.date && props.current.date < today ? undefined : today}
+          onChange={(e) => setDate(e.target.value)}
+          className={`${field} tracking-normal [color-scheme:dark]`}
+        />
+      </label>
+      {error && <p className="mt-4 text-sm text-mute">{error}</p>}
+      <button
+        type="submit"
+        disabled={busy || !title.trim() || !date}
+        className="mt-8 w-full bg-paper py-4 text-sm tracking-[0.2em] text-ink uppercase disabled:opacity-40"
+      >
+        {busy ? "Saving…" : "Save"}
+      </button>
+      {props.current && (
+        <button
+          type="button"
+          onClick={() => save({ title: null, date: null })}
+          disabled={busy}
+          className="mt-3 w-full py-3 text-xs tracking-[0.2em] text-paper/50 uppercase hover:text-paper"
+        >
+          Remove big day
+        </button>
+      )}
+    </form>
   );
 }
 

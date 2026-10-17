@@ -5,7 +5,7 @@ import { addMessage, getAthlete, getWhy, isMember, recentMessages } from "@/lib/
 import { classifySafety } from "@/lib/claude";
 import { coachReplyResponse } from "@/lib/coach/respond";
 import { localDay } from "@/lib/coach/time";
-import { habitSnapshot } from "@/lib/habits";
+import { habitSnapshot, withBigDay } from "@/lib/habits";
 import { keywordScreen } from "@/lib/keywords";
 import { clientIp, hashIp } from "@/lib/request";
 import { logCrisisEvent } from "@/lib/safety";
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     athleteId: userId,
     firstName: athlete!.first_name,
     why,
-    habits,
+    habits: withBigDay(athlete!, habits, localDay(parsed.data.tz ?? "UTC").date),
     history,
     turn,
     userMessageId,
