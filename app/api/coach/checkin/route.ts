@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { addCheckin, getAthlete, getWhy, hasCheckin, isMember, recentMessages } from "@/lib/athletes";
 import { generateCheckin } from "@/lib/coach/claude";
-import { habitSnapshot } from "@/lib/habits";
+import { habitSnapshot, withBigDay } from "@/lib/habits";
 import { localDay } from "@/lib/coach/time";
 
 export const runtime = "nodejs";
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const text = await generateCheckin({
       firstName: athlete!.first_name,
       why,
-      habits,
+      habits: withBigDay(athlete!, habits, date),
       weekday,
       recentCheckins,
     });

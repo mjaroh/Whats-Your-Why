@@ -1,4 +1,5 @@
 import "server-only";
+import { describeBigDay } from "./bigDay";
 import { db } from "./db";
 import { dayCounts, describeHabits, TIER_MAX, type DayCounts, type Habit, type Tier } from "./habitRules";
 
@@ -146,4 +147,17 @@ export async function habitSnapshot(athleteId: string, today: string): Promise<s
       ORDER BY day`,
   ]);
   return describeHabits(habits, rows, today);
+}
+
+/** Puts the athlete's big day (if set) in front of the habit summary for the coach. */
+export function withBigDay(
+  athlete: { big_day_title: string | null; big_day_date: string | null },
+  habits: string | null,
+  today: string,
+): string | null {
+  const line =
+    athlete.big_day_title && athlete.big_day_date
+      ? describeBigDay(athlete.big_day_title, athlete.big_day_date, today)
+      : null;
+  return [line, habits].filter(Boolean).join("\n\n") || null;
 }

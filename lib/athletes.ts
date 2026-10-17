@@ -12,6 +12,8 @@ export type Athlete = {
   stripe_customer_id: string | null;
   subscription_status: string | null;
   current_period_end: Date | null;
+  big_day_title: string | null;
+  big_day_date: string | null; // YYYY-MM-DD
 };
 
 /** Their why, plus their sport (which can be set without a why). */
@@ -38,7 +40,8 @@ export async function getAthlete(id: string): Promise<Athlete | null> {
   const sql = await db();
   const [row] = await sql<Athlete[]>`
     SELECT id, first_name, username, banned_at, avatar_pathname, age_confirmed_at, stripe_customer_id,
-           subscription_status, current_period_end
+           subscription_status, current_period_end,
+           big_day_title, to_char(big_day_date, 'YYYY-MM-DD') AS big_day_date
     FROM athletes WHERE id = ${id}`;
   return row ?? null;
 }
@@ -87,6 +90,12 @@ export async function saveWhy(athleteId: string, why: Why & { statement: string 
   // A skipped sport question keeps the sport they already have.
   const sport = cleanSport(why.sport);
   if (sport) await setSport(athleteId, sport);
+}
+
+/** The athlete's big day (both null to clear it). */
+export async function setBigDay(athleteId: string, title: string | null, date: string | null) {
+  const sql = await db();
+  await sql`UPDATE athletes SET big_day_title = ${title}, big_day_date = ${date} WHERE id = ${athleteId}`;
 }
 
 export async function setSport(athleteId: string, sport: string | null) {

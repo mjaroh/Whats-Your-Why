@@ -116,6 +116,8 @@ async function ensureSchema(sql: postgres.Sql) {
   await sql`ALTER TABLE group_messages ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ DEFAULT now()`;
   await sql`ALTER TABLE athletes ADD COLUMN IF NOT EXISTS avatar_pathname TEXT`;
   await sql`ALTER TABLE athletes ADD COLUMN IF NOT EXISTS sport TEXT`;
+  await sql`ALTER TABLE athletes ADD COLUMN IF NOT EXISTS big_day_title TEXT`;
+  await sql`ALTER TABLE athletes ADD COLUMN IF NOT EXISTS big_day_date DATE`;
   await sql`
     CREATE TABLE IF NOT EXISTS favorites (
       athlete_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
