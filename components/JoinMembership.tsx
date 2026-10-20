@@ -16,7 +16,7 @@ function store(key: string, value: string) {
 }
 
 // Screen 4 once accounts are live: a free account joins the group; the
-// private coach is $8/month inside the app. Athletes 13+.
+// private coach is $14.99/month or $120/year. Athletes 13+.
 export function JoinMembership(props: {
   statement: string;
   answers: WhyAnswers;
@@ -80,7 +80,7 @@ export function JoinMembership(props: {
         </p>
         <p>
           Want more? Your own private coach that teaches in Michael&rsquo;s voice, built on your
-          why, is $8 a month inside the app.
+          why, is $14.99 a month or $120 a year.
         </p>
       </div>
 
@@ -99,7 +99,15 @@ export function JoinMembership(props: {
       </button>
       <p className="mt-4 text-xs leading-relaxed text-mute">
         Your why and your answers are saved to your account. Askesis is for athletes 13 and
-        older.
+        older. By joining you agree to the{" "}
+        <a href="/terms" className="underline underline-offset-2">
+          Terms
+        </a>{" "}
+        and{" "}
+        <a href="/privacy" className="underline underline-offset-2">
+          Privacy Policy
+        </a>
+        .
       </p>
       <a href="/sign-in" className="mt-10 block text-sm text-paper/60 underline-offset-4 hover:underline">
         Already have an account? Sign in

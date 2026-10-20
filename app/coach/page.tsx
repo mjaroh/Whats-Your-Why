@@ -8,7 +8,7 @@ import { blobEnabled } from "@/lib/blob";
 import { clerkEnabled } from "@/lib/clerk";
 import { favoriteIds } from "@/lib/media";
 import { stripTags } from "@/lib/coach/history";
-import { PRICE_LABEL, stripeEnabled, syncCheckoutSession } from "@/lib/stripe";
+import { stripeEnabled, syncCheckoutSession } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,6 @@ export default async function CoachPage({
       <Paywall
         nav={{ username: athlete!.username!, hasAvatar: Boolean(athlete!.avatar_pathname) }}
         statement={why?.statement ?? null}
-        price={PRICE_LABEL}
         open={stripeEnabled()}
         admin={admin}
       />

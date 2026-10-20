@@ -1,9 +1,8 @@
 import "server-only";
 import Stripe from "stripe";
 import { updateSubscription } from "./athletes";
+import { PLANS, type PlanId } from "./plans";
 
-export const PRICE_CENTS = 800; // $8.00 / month
-export const PRICE_LABEL = "$8/month";
 
 export function stripeEnabled() {
   return Boolean(process.env.STRIPE_SECRET_KEY);
@@ -20,7 +19,9 @@ export async function createCheckout(opts: {
   athleteId: string;
   customerId: string | null;
   origin: string;
+  plan: PlanId;
 }) {
+  const plan = PLANS[opts.plan];
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     client_reference_id: opts.athleteId,
@@ -30,8 +31,8 @@ export async function createCheckout(opts: {
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: PRICE_CENTS,
-          recurring: { interval: "month" },
+          unit_amount: plan.cents,
+          recurring: { interval: plan.interval },
           product_data: { name: "Askesis membership" },
         },
       },

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Askesis</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b0b0a; color: #f2efe8; font-family: -apple-system, system-ui, sans-serif; }
+      main { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; box-sizing: border-box; }
+      p { color: #8a867e; line-height: 1.5; max-width: 22rem; }
+      button { margin-top: 24px; background: #f2efe8; color: #0b0b0a; border: 0; padding: 14px 28px; letter-spacing: 0.2em; text-transform: uppercase; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <!-- Shown only if the app can't reach whatsyourwhy.app (e.g. no internet). -->
+    <main>
+      <h1>You&rsquo;re offline</h1>
+      <p>Askesis needs an internet connection. Check your connection and try again.</p>
+      <button onclick="location.href='https://whatsyourwhy.app'">Try again</button>
+    </main>
+  </body>
+</html>
