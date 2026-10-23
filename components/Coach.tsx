@@ -248,7 +248,9 @@ export function Coach(props: {
                   />
                 )}
               </div>
-              <p className="text-lg leading-relaxed whitespace-pre-wrap text-paper">{m.content}</p>
+              <p className="text-lg leading-relaxed break-words whitespace-pre-wrap text-paper">
+                <Linkified text={m.content} />
+              </p>
             </div>
           ) : (
             <div key={m.id} className="border-l border-line pl-4">
@@ -313,5 +315,23 @@ function Thinking() {
         />
       ))}
     </div>
+  );
+}
+
+/** Turns web links in a coach reply into tappable links (they open outside the app). */
+function Linkified({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s<>"')\]]+[^\s<>"')\].,;:!?])/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            {part}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }
