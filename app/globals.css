@@ -176,3 +176,30 @@ html:has(.app-shell) body {
   background: var(--color-ink);
   padding-top: max(1.25rem, calc(env(safe-area-inset-top) + 0.75rem));
 }
+
+/* Askesis tokens (components/AskesisToken.tsx). The A arrives from small and
+   blurred, lands with a flash, then the words rise under it. */
+.token-arrive {
+  animation: token-arrive 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both;
+}
+.token-words {
+  animation: rise 0.6s 1.3s ease-out both;
+}
+.token-hint {
+  animation: rise 0.6s 2.2s ease-out both;
+}
+.token-glow {
+  animation: token-glow 2.4s ease-in-out infinite;
+}
+@keyframes token-arrive {
+  0% { opacity: 0; transform: scale(0.4); filter: blur(12px) drop-shadow(0 0 0 transparent); }
+  60% { opacity: 1; transform: scale(1.08); filter: blur(0) drop-shadow(0 0 40px rgb(255 255 255 / 0.7)); }
+  100% { opacity: 1; transform: none; filter: drop-shadow(0 0 16px rgb(255 255 255 / 0.25)); }
+}
+@keyframes token-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(255 255 255 / 0); }
+  50% { box-shadow: 0 0 24px 2px rgb(255 255 255 / 0.45); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .token-arrive, .token-words, .token-hint, .token-glow { animation: none; }
+}
