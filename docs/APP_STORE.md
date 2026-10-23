@@ -96,7 +96,7 @@ Set your big day — a meet, tryouts, your first game — and watch it come clos
 
 The group and habit tracker are free. The private coach is a membership: $14.99/month or $120/year.
 
-Askesis is for athletes 13 and older. The coach is an AI and is not medical advice.
+Askesis is for athletes 13 and older. The coach is an AI and is not medical advice. Michael is an Eastern Orthodox Christian; the coach only talks about faith if you ask, and then answers from the Orthodox perspective.
 Terms: https://whatsyourwhy.app/terms
 Privacy: https://whatsyourwhy.app/privacy
 ```
