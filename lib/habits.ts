@@ -140,7 +140,10 @@ export async function habitGrid(athleteId: string, today: string) {
 export async function habitSnapshot(athleteId: string, today: string): Promise<string | null> {
   const sql = await db();
   const [habits, rows] = await Promise.all([
-    activeHabits(athleteId),
+    sql<(Habit & { since: string })[]>`
+      SELECT id::int AS id, tier, title, to_char(created_at, 'YYYY-MM-DD') AS since FROM habits
+      WHERE athlete_id = ${athleteId} AND archived_at IS NULL
+      ORDER BY id`,
     sql<{ day: string; checked: number[]; sleep: number | null }[]>`
       SELECT to_char(day, 'YYYY-MM-DD') AS day, checked, sleep_hours AS sleep FROM habit_days
       WHERE athlete_id = ${athleteId} AND day <= ${today}::date AND day > ${today}::date - 60
