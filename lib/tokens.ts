@@ -18,14 +18,8 @@ export async function listTokens(athleteId: string): Promise<Token[]> {
  * Gives the athlete today's token if today now earns one. Returns the new
  * token's number, or null (not earned, or already given today).
  */
-export async function awardToken(
-  athleteId: string,
-  day: string,
-): Promise<number | null> {
-  const [habits, row] = await Promise.all([
-    activeHabits(athleteId),
-    today(athleteId, day),
-  ]);
+export async function awardToken(athleteId: string, day: string): Promise<number | null> {
+  const [habits, row] = await Promise.all([activeHabits(athleteId), today(athleteId, day)]);
   if (!earnsToken(habits, row.checked, row.sleep)) return null;
   const sql = await db();
   const inserted = await sql`

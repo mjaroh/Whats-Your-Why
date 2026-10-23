@@ -73,18 +73,14 @@ export function TokenCelebration({ onClose }: { onClose: () => void }) {
         <p className="token-words font-display mt-12 max-w-sm text-3xl leading-tight font-bold tracking-tight">
           Congratulations! You&rsquo;ve earned one Askesis token!
         </p>
-        <p
-          className="token-hint mt-16 text-xs tracking-[0.2em] text-mute uppercase"
-          aria-hidden
-        >
+        <p className="token-hint mt-16 text-xs tracking-[0.2em] text-mute uppercase" aria-hidden>
           Scroll ↓
         </p>
       </section>
       <section className="mx-auto flex min-h-[70%] max-w-md flex-col items-center px-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+3rem))] text-center">
         <p className="text-lg leading-relaxed text-paper/80">
-          Head to your profile and click the new emblem that is revealed on your
-          page. You&rsquo;ll be able to see all the Askesis tokens that you earn
-          over your journey, with a special message from a special person.
+          Head to your profile and click the new emblem that is revealed on your page. You&rsquo;ll be able to see all
+          the Askesis tokens that you earn over your journey, with a special message from a special person.
         </p>
         <a
           href="/profile"
@@ -117,9 +113,7 @@ export function TokenEmblem({ className = "" }: { className?: string }) {
   useEffect(() => {
     fetch("/api/tokens")
       .then((r) => (r.ok ? r.json() : null))
-      .then(
-        (d: { tokens?: Token[] } | null) => d?.tokens && setTokens(d.tokens),
-      )
+      .then((d: { tokens?: Token[] } | null) => d?.tokens && setTokens(d.tokens))
       .catch(() => {});
   }, []);
 
@@ -129,10 +123,7 @@ export function TokenEmblem({ className = "" }: { className?: string }) {
   function read(t: Token) {
     setReading(t);
     if (t.opened) return;
-    setTokens(
-      (all) =>
-        all && all.map((x) => (x.day === t.day ? { ...x, opened: true } : x)),
-    );
+    setTokens((all) => all && all.map((x) => (x.day === t.day ? { ...x, opened: true } : x)));
     void fetch("/api/tokens", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -180,12 +171,10 @@ export function TokenEmblem({ className = "" }: { className?: string }) {
                 <TokenMessageView token={reading} />
               ) : (
                 <>
-                  <h2 className="font-display text-3xl font-bold tracking-tight">
-                    ASKESIS TOKENS
-                  </h2>
+                  <h2 className="font-display text-3xl font-bold tracking-tight">ASKESIS TOKENS</h2>
                   <p className="mt-3 text-sm leading-relaxed text-paper/60">
-                    One for every day you check off every habit and sleep 9½ to
-                    10 hours. Tap a token to open its message.
+                    One for every day you check off every habit and sleep 9½ to 10 hours. Tap a token to open its
+                    message.
                   </p>
                   <ul className="mt-10 grid grid-cols-3 gap-x-4 gap-y-8">
                     {tokens.map((t) => (
@@ -197,18 +186,13 @@ export function TokenEmblem({ className = "" }: { className?: string }) {
                           aria-label={`Token ${t.number}, ${longDate(t.day)}${t.opened ? "" : ", not opened yet"}`}
                         >
                           <TokenCoin size={80} glow={!t.opened} />
-                          <span className="mt-3 text-xs font-bold tabular-nums">
-                            No. {t.number}
-                          </span>
+                          <span className="mt-3 text-xs font-bold tabular-nums">No. {t.number}</span>
                           <span className="mt-1 text-[10px] tracking-[0.15em] text-mute uppercase">
-                            {new Date(`${t.day}T12:00:00Z`).toLocaleDateString(
-                              undefined,
-                              {
-                                timeZone: "UTC",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )}
+                            {new Date(`${t.day}T12:00:00Z`).toLocaleDateString(undefined, {
+                              timeZone: "UTC",
+                              month: "short",
+                              day: "numeric",
+                            })}
                           </span>
                         </button>
                       </li>
@@ -237,9 +221,7 @@ function TokenMessageView({ token }: { token: Token }) {
           <blockquote className="font-display mt-12 text-2xl leading-snug font-bold tracking-tight">
             &ldquo;{message.quote}&rdquo;
           </blockquote>
-          <p className="mt-5 text-sm tracking-[0.15em] text-paper/70 uppercase">
-            {message.source}
-          </p>
+          <p className="mt-5 text-sm tracking-[0.15em] text-paper/70 uppercase">{message.source}</p>
           {message.link && (
             <a
               href={message.link.href}

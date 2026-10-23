@@ -16,12 +16,8 @@ async function athleteId(): Promise<string | null> {
 // The athlete's Askesis tokens.
 export async function GET() {
   const id = await athleteId();
-  if (!id)
-    return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  return NextResponse.json(
-    { tokens: await listTokens(id) },
-    { headers: { "Cache-Control": "no-store" } },
-  );
+  if (!id) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  return NextResponse.json({ tokens: await listTokens(id) }, { headers: { "Cache-Control": "no-store" } });
 }
 
 const Body = z.object({ day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
@@ -29,11 +25,9 @@ const Body = z.object({ day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
 // Marks a token as opened, so its emblem stops showing "new".
 export async function POST(req: Request) {
   const id = await athleteId();
-  if (!id)
-    return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!id) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
-  if (!parsed.success)
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   await openToken(id, parsed.data.day);
   return NextResponse.json({ ok: true });
 }

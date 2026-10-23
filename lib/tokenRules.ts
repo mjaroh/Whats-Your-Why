@@ -7,13 +7,8 @@ import { habitsComplete, type Habit } from "./habitRules.ts";
 export const TOKEN_SLEEP_MIN = 9.5;
 export const TOKEN_SLEEP_MAX = 10;
 
-export function earnsToken(
-  habits: Habit[],
-  checked: number[],
-  sleep: number | null,
-): boolean {
-  if (sleep === null || sleep < TOKEN_SLEEP_MIN || sleep > TOKEN_SLEEP_MAX)
-    return false;
+export function earnsToken(habits: Habit[], checked: number[], sleep: number | null): boolean {
+  if (sleep === null || sleep < TOKEN_SLEEP_MIN || sleep > TOKEN_SLEEP_MAX) return false;
   if (!habitsComplete(habits)) return false;
   const done = new Set(checked);
   return habits.every((h) => done.has(h.id));
