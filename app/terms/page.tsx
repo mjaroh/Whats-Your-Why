@@ -14,19 +14,20 @@ export default function TermsPage() {
 
       <H2>The AI coach is not a doctor</H2>
       <p>
-        The coach is an AI that teaches in Michael Jaroh&rsquo;s voice. It isn&rsquo;t Michael, a therapist, a doctor
-        or a dietitian, and it can be wrong. It gives general guidance on mindset, habits and training life, not
-        medical, mental health or nutrition treatment. For injuries, health questions, eating or weight concerns, talk to
-        a parent and a qualified professional. If you&rsquo;re in crisis, call or text 988 (US) or text HOME to 741741;
-        in an emergency call 911.
+        The coach is an AI that teaches in Michael Jaroh&rsquo;s voice. It isn&rsquo;t Michael, a therapist, a doctor or
+        a dietitian, and it can be wrong. It gives general guidance on mindset, habits and training life, not medical,
+        mental health or nutrition treatment. For injuries, health questions, eating or weight concerns, talk to a
+        parent and a qualified professional. Michael is an Eastern Orthodox Christian: the coach never brings up faith
+        on its own, but if you ask about God or faith it answers from the Orthodox Christian perspective. If
+        you&rsquo;re in crisis, call or text 988 (US) or text HOME to 741741; in an emergency call 911.
       </p>
 
       <H2>The group</H2>
       <p>
-        Be for each other. Don&rsquo;t post anything hateful, sexual, violent, bullying or illegal, and don&rsquo;t share
-        phone numbers, social accounts, your school or location, or plans to meet up. We can remove posts and suspend
-        or ban accounts that break these rules. You own what you post; you give us permission to store and show it in
-        the app so the group can see it.
+        Be for each other. Don&rsquo;t post anything hateful, sexual, violent, bullying or illegal, and don&rsquo;t
+        share phone numbers, social accounts, your school or location, or plans to meet up. We can remove posts and
+        suspend or ban accounts that break these rules. You own what you post; you give us permission to store and show
+        it in the app so the group can see it.
       </p>
 
       <H2>Membership</H2>
