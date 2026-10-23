@@ -8,11 +8,17 @@ import { AppShell } from "./AppShell";
 import { Avatar, VideoPlayer } from "./MediaBits";
 import { SportChoices } from "./SportChoices";
 import { BigDayCountdown, LA28Countdown } from "./LA28Countdown";
+import { TokenEmblem } from "./AskesisToken";
 import { BIG_DAY_TITLE_MAX } from "@/lib/bigDay";
 import { isSummerOlympicSport } from "@/lib/olympics";
 import { habitsComplete, type Tier, type TodayStatus } from "@/lib/habitRules";
 
-type CoachVideo = { mediaId: number; note: string; feedback: string | null; at: string };
+type CoachVideo = {
+  mediaId: number;
+  note: string;
+  feedback: string | null;
+  at: string;
+};
 type Favorite = {
   source: "coach" | "group";
   messageId: number;
@@ -21,7 +27,11 @@ type Favorite = {
   mediaId: number | null;
 };
 
-const when = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const when = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 
 export function Profile(props: {
   username: string;
@@ -58,13 +68,18 @@ export function Profile(props: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image }),
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
       if (!data.ok) throw new Error(data.error ?? "Couldn't save that photo.");
       setHasAvatar(true);
       setPhotoVersion(Date.now());
       setPhotoStatus(null);
     } catch (err) {
-      setPhotoStatus(err instanceof Error ? err.message : "Couldn't save that photo.");
+      setPhotoStatus(
+        err instanceof Error ? err.message : "Couldn't save that photo.",
+      );
     }
   }
 
@@ -87,16 +102,31 @@ export function Profile(props: {
   const quotes = favorites.filter((f) => !f.mediaId && f.content);
 
   async function unsave(f: Favorite) {
-    setFavorites((list) => list.filter((x) => !(x.source === f.source && x.messageId === f.messageId)));
+    setFavorites((list) =>
+      list.filter(
+        (x) => !(x.source === f.source && x.messageId === f.messageId),
+      ),
+    );
     await fetch("/api/favorites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: f.source, messageId: f.messageId, on: false }),
+      body: JSON.stringify({
+        source: f.source,
+        messageId: f.messageId,
+        on: false,
+      }),
     }).catch(() => null);
   }
 
   return (
-    <AppShell header={<AppNav active="profile" me={{ username: props.username, hasAvatar, version: photoVersion }} />}>
+    <AppShell
+      header={
+        <AppNav
+          active="profile"
+          me={{ username: props.username, hasAvatar, version: photoVersion }}
+        />
+      }
+    >
       <div className="mx-auto w-full max-w-2xl px-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+2rem))]">
         {/* Photo, username, why */}
         <section className="relative flex flex-col items-center pt-8 text-center">
@@ -106,10 +136,17 @@ export function Profile(props: {
           <button
             type="button"
             onClick={() => props.photosEnabled && photoInput.current?.click()}
-            aria-label={hasAvatar ? "Change profile photo" : "Add profile photo"}
+            aria-label={
+              hasAvatar ? "Change profile photo" : "Add profile photo"
+            }
             className="relative"
           >
-            <Avatar username={props.username} hasAvatar={hasAvatar} size={104} version={photoVersion} />
+            <Avatar
+              username={props.username}
+              hasAvatar={hasAvatar}
+              size={104}
+              version={photoVersion}
+            />
             {props.photosEnabled && (
               <span className="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-ink text-sm text-paper">
                 +
@@ -127,8 +164,12 @@ export function Profile(props: {
               if (file) void changePhoto(file);
             }}
           />
-          {photoStatus && <p className="mt-3 max-w-xs text-sm text-mute">{photoStatus}</p>}
-          <h1 className="font-display mt-4 text-2xl font-bold tracking-tight">{props.username}</h1>
+          {photoStatus && (
+            <p className="mt-3 max-w-xs text-sm text-mute">{photoStatus}</p>
+          )}
+          <h1 className="font-display mt-4 text-2xl font-bold tracking-tight">
+            {props.username}
+          </h1>
           <button
             type="button"
             onClick={() => setEditSport(true)}
@@ -145,6 +186,7 @@ export function Profile(props: {
               className="mt-4"
             />
           )}
+          <TokenEmblem className="mt-6" />
           <button
             type="button"
             onClick={() => setShowWhy(true)}
@@ -162,9 +204,21 @@ export function Profile(props: {
               done: hasAvatar,
               onClick: () => props.photosEnabled && photoInput.current?.click(),
             },
-            { label: "Add your sport", done: Boolean(sport), onClick: () => setEditSport(true) },
-            { label: "Find your why", done: Boolean(props.why), href: "/?retake=1" },
-            { label: "Set your big day", done: Boolean(bigDay), onClick: () => setEditBigDay(true) },
+            {
+              label: "Add your sport",
+              done: Boolean(sport),
+              onClick: () => setEditSport(true),
+            },
+            {
+              label: "Find your why",
+              done: Boolean(props.why),
+              href: "/?retake=1",
+            },
+            {
+              label: "Set your big day",
+              done: Boolean(bigDay),
+              onClick: () => setEditBigDay(true),
+            },
             {
               label: "Set up your habits",
               done: habitsComplete(props.habitTiers.map((tier) => ({ tier }))),
@@ -187,11 +241,17 @@ export function Profile(props: {
                   {props.videos.length === 0 ? (
                     <p className="text-sm leading-relaxed text-paper/60">
                       {props.member ? (
-                        <>Send your coach a video from the Coach tab and it&rsquo;ll be saved here with the feedback.</>
+                        <>
+                          Send your coach a video from the Coach tab and
+                          it&rsquo;ll be saved here with the feedback.
+                        </>
                       ) : (
                         <>
                           Video feedback is part of your private coach.{" "}
-                          <a href="/coach" className="text-paper/80 underline underline-offset-4">
+                          <a
+                            href="/coach"
+                            className="text-paper/80 underline underline-offset-4"
+                          >
                             See membership
                           </a>
                         </>
@@ -222,15 +282,26 @@ export function Profile(props: {
                   )}
                   {savedVideos.length > 0 && (
                     <div className="mt-8 space-y-4">
-                      <p className="text-xs tracking-[0.15em] text-mute uppercase">Saved videos</p>
+                      <p className="text-xs tracking-[0.15em] text-mute uppercase">
+                        Saved videos
+                      </p>
                       {savedVideos.map((f) => (
-                        <div key={`${f.source}-${f.messageId}`} className="border border-line px-4 py-4">
+                        <div
+                          key={`${f.source}-${f.messageId}`}
+                          className="border border-line px-4 py-4"
+                        >
                           <div className="flex items-start justify-between gap-3">
-                            <p className="text-xs tracking-[0.15em] text-mute uppercase">{f.from}</p>
+                            <p className="text-xs tracking-[0.15em] text-mute uppercase">
+                              {f.from}
+                            </p>
                             <UnsaveStar onClick={() => unsave(f)} />
                           </div>
                           <VideoPlayer mediaId={f.mediaId!} />
-                          {f.content && <p className="mt-2 leading-relaxed text-paper/80">{f.content}</p>}
+                          {f.content && (
+                            <p className="mt-2 leading-relaxed text-paper/80">
+                              {f.content}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -243,14 +314,20 @@ export function Profile(props: {
               body:
                 quotes.length === 0 ? (
                   <p className="text-sm leading-relaxed text-paper/60">
-                    Tap ☆ on a message from your coach or the group to keep it here.
+                    Tap ☆ on a message from your coach or the group to keep it
+                    here.
                   </p>
                 ) : (
                   <div className="space-y-4">
                     {quotes.map((f) => (
-                      <figure key={`${f.source}-${f.messageId}`} className="border border-line px-5 py-5">
+                      <figure
+                        key={`${f.source}-${f.messageId}`}
+                        className="border border-line px-5 py-5"
+                      >
                         <div className="flex items-start justify-between gap-3">
-                          <figcaption className="text-xs tracking-[0.15em] text-mute uppercase">{f.from}</figcaption>
+                          <figcaption className="text-xs tracking-[0.15em] text-mute uppercase">
+                            {f.from}
+                          </figcaption>
                           <UnsaveStar onClick={() => unsave(f)} />
                         </div>
                         <blockquote className="font-display mt-3 text-xl leading-snug font-bold tracking-tight whitespace-pre-wrap text-paper">
@@ -267,15 +344,22 @@ export function Profile(props: {
 
       {showWhy && (
         <Overlay onClose={() => setShowWhy(false)}>
-          <p className="text-xs tracking-[0.2em] text-mute uppercase">Your why</p>
+          <p className="text-xs tracking-[0.2em] text-mute uppercase">
+            Your why
+          </p>
           {props.why ? (
             <p className="font-display mt-6 text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
               &ldquo;{props.why}&rdquo;
             </p>
           ) : (
-            <p className="mt-6 text-lg text-paper/80">You haven&rsquo;t saved a why yet.</p>
+            <p className="mt-6 text-lg text-paper/80">
+              You haven&rsquo;t saved a why yet.
+            </p>
           )}
-          <a href="/?retake=1" className="mt-10 inline-block text-sm text-paper/60 underline underline-offset-4">
+          <a
+            href="/?retake=1"
+            className="mt-10 inline-block text-sm text-paper/60 underline underline-offset-4"
+          >
             {props.why ? "Retake the Seven Whys" : "Find your why"}
           </a>
         </Overlay>
@@ -295,7 +379,9 @@ export function Profile(props: {
 
       {editSport && (
         <Overlay onClose={() => setEditSport(false)}>
-          <p className="text-xs tracking-[0.2em] text-mute uppercase">Your sport</p>
+          <p className="text-xs tracking-[0.2em] text-mute uppercase">
+            Your sport
+          </p>
           <p className="mt-4 leading-relaxed text-paper/70">
             Your coach uses this to talk your sport&rsquo;s language.
           </p>
@@ -306,13 +392,21 @@ export function Profile(props: {
 
       {openVideo && (
         <Overlay onClose={() => setOpenVideo(null)}>
-          <p className="text-xs tracking-[0.2em] text-mute uppercase">{when(openVideo.at)}</p>
+          <p className="text-xs tracking-[0.2em] text-mute uppercase">
+            {when(openVideo.at)}
+          </p>
           <VideoPlayer mediaId={openVideo.mediaId} />
-          {openVideo.note && <p className="mt-3 text-paper/60">{openVideo.note}</p>}
+          {openVideo.note && (
+            <p className="mt-3 text-paper/60">{openVideo.note}</p>
+          )}
           {openVideo.feedback && (
             <>
-              <p className="mt-8 text-xs tracking-[0.2em] text-mute uppercase">Coach&rsquo;s feedback</p>
-              <p className="mt-2 text-lg leading-relaxed whitespace-pre-wrap">{openVideo.feedback}</p>
+              <p className="mt-8 text-xs tracking-[0.2em] text-mute uppercase">
+                Coach&rsquo;s feedback
+              </p>
+              <p className="mt-2 text-lg leading-relaxed whitespace-pre-wrap">
+                {openVideo.feedback}
+              </p>
             </>
           )}
         </Overlay>
@@ -321,13 +415,26 @@ export function Profile(props: {
   );
 }
 
-const HABIT_BUTTON: Record<TodayStatus, { className: string; status: string }> = {
-  unset: { className: "border-paper/40 text-paper", status: "" },
-  none: { className: "border-status-red bg-status-red text-ink", status: "Sleep not logged yet" },
-  started: { className: "border-status-yellow bg-status-yellow text-ink", status: "Must dos in progress" },
-  musts: { className: "border-status-green bg-status-green text-ink", status: "All must dos done" },
-  done: { className: "border-line text-paper/35", status: "Everything done today" },
-};
+const HABIT_BUTTON: Record<TodayStatus, { className: string; status: string }> =
+  {
+    unset: { className: "border-paper/40 text-paper", status: "" },
+    none: {
+      className: "border-status-red bg-status-red text-ink",
+      status: "Sleep not logged yet",
+    },
+    started: {
+      className: "border-status-yellow bg-status-yellow text-ink",
+      status: "Must dos in progress",
+    },
+    musts: {
+      className: "border-status-green bg-status-green text-ink",
+      status: "All must dos done",
+    },
+    done: {
+      className: "border-line text-paper/35",
+      status: "Everything done today",
+    },
+  };
 
 function HabitButton() {
   const [status, setStatus] = useState<TodayStatus>("unset");
@@ -336,7 +443,10 @@ function HabitButton() {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       fetch(`/api/habits?summary=1&tz=${encodeURIComponent(tz)}`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((d: { status?: TodayStatus } | null) => d?.status && setStatus(d.status))
+        .then(
+          (d: { status?: TodayStatus } | null) =>
+            d?.status && setStatus(d.status),
+        )
         .catch(() => {});
     };
     load();
@@ -375,13 +485,21 @@ function BigDayForm(props: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }).catch(() => null);
-    const data = (await res?.json().catch(() => null)) as { ok?: boolean; error?: string; title?: string } | null;
+    const data = (await res?.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+      title?: string;
+    } | null;
     setBusy(false);
     if (!data?.ok) {
       setError(data?.error ?? "Couldn't save that. Try again.");
       return;
     }
-    props.onSaved(body.title && body.date ? { title: data.title ?? body.title, date: body.date } : null);
+    props.onSaved(
+      body.title && body.date
+        ? { title: data.title ?? body.title, date: body.date }
+        : null,
+    );
   }
 
   const field =
@@ -393,9 +511,12 @@ function BigDayForm(props: {
         if (title.trim() && date) void save({ title: title.trim(), date });
       }}
     >
-      <p className="text-xs tracking-[0.2em] text-mute uppercase">Your big day</p>
+      <p className="text-xs tracking-[0.2em] text-mute uppercase">
+        Your big day
+      </p>
       <p className="mt-4 leading-relaxed text-paper/70">
-        The day you&rsquo;re training for: a meet, tryouts, a first game. It counts down on your profile.
+        The day you&rsquo;re training for: a meet, tryouts, a first game. It
+        counts down on your profile.
       </p>
       <label className="mt-8 block text-xs tracking-[0.2em] text-mute uppercase">
         What is it?
@@ -412,7 +533,11 @@ function BigDayForm(props: {
         <input
           type="date"
           value={date}
-          min={props.current?.date && props.current.date < today ? undefined : today}
+          min={
+            props.current?.date && props.current.date < today
+              ? undefined
+              : today
+          }
           onChange={(e) => setDate(e.target.value)}
           className={`${field} tracking-normal [color-scheme:dark]`}
         />
@@ -441,7 +566,12 @@ function BigDayForm(props: {
 
 function UnsaveStar({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-label="Remove from saved" className="px-1 leading-none text-paper">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Remove from saved"
+      className="px-1 leading-none text-paper"
+    >
       ★
     </button>
   );
@@ -451,7 +581,10 @@ function UnsaveStar({ onClick }: { onClick: () => void }) {
  * Tabs whose panels sit side by side: swipe sideways or tap a tab. Native
  * scroll snapping does the swiping, so it feels like the phone's own.
  */
-function SwipeTabs(props: { tabs: { label: string; body: React.ReactNode }[]; className?: string }) {
+function SwipeTabs(props: {
+  tabs: { label: string; body: React.ReactNode }[];
+  className?: string;
+}) {
   const [active, setActive] = useState(0);
   const track = useRef<HTMLDivElement>(null);
 
@@ -473,7 +606,9 @@ function SwipeTabs(props: { tabs: { label: string; body: React.ReactNode }[]; cl
             aria-selected={active === i}
             onClick={() => go(i)}
             className={`-mb-px flex-1 border-b py-3 text-xs tracking-[0.2em] uppercase transition-colors ${
-              active === i ? "border-paper text-paper" : "border-transparent text-paper/45 hover:text-paper/80"
+              active === i
+                ? "border-paper text-paper"
+                : "border-transparent text-paper/45 hover:text-paper/80"
             }`}
           >
             {t.label}
@@ -505,16 +640,29 @@ function SwipeTabs(props: { tabs: { label: string; body: React.ReactNode }[]; cl
   );
 }
 
-function Completion(props: { steps: { label: string; done: boolean; href?: string; onClick?: () => void }[] }) {
+function Completion(props: {
+  steps: {
+    label: string;
+    done: boolean;
+    href?: string;
+    onClick?: () => void;
+  }[];
+}) {
   const left = props.steps.filter((s) => !s.done).length;
   if (left === 0) {
-    return <p className="mt-10 text-center text-xs tracking-[0.2em] text-paper/60 uppercase">✓ Profile complete</p>;
+    return (
+      <p className="mt-10 text-center text-xs tracking-[0.2em] text-paper/60 uppercase">
+        ✓ Profile complete
+      </p>
+    );
   }
   const item = "flex w-full items-center gap-3 py-2.5 text-left text-sm";
   return (
     <section className="mt-12 border border-line px-5 py-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Complete your profile</h2>
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">
+          Complete your profile
+        </h2>
         <span className="text-xs text-paper/60 tabular-nums">
           {props.steps.length - left}/{props.steps.length}
         </span>
@@ -531,7 +679,11 @@ function Completion(props: { steps: { label: string; done: boolean; href?: strin
               >
                 {s.done ? "✓" : ""}
               </span>
-              <span className={s.done ? "text-paper/40 line-through" : "text-paper"}>{s.label}</span>
+              <span
+                className={s.done ? "text-paper/40 line-through" : "text-paper"}
+              >
+                {s.label}
+              </span>
             </>
           );
           return (
@@ -557,7 +709,11 @@ function Completion(props: { steps: { label: string; done: boolean; href?: strin
 
 function Overlay(props: { onClose: () => void; children: React.ReactNode }) {
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-20 overflow-y-auto bg-ink/95 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-20 overflow-y-auto bg-ink/95 backdrop-blur-sm"
+    >
       <div className="rise mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-6 py-20">
         <button
           type="button"
