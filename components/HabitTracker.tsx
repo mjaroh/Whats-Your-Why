@@ -68,9 +68,7 @@ export function HabitTracker(props: { nav: NavMe }) {
   const closeEarned = useCallback(() => setEarned(false), []);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/habits?tz=${encodeURIComponent(tz())}`).catch(
-      () => null,
-    );
+    const res = await fetch(`/api/habits?tz=${encodeURIComponent(tz())}`).catch(() => null);
     if (!res?.ok) {
       setError("Couldn't load your habits. Pull down to try again.");
       return;
@@ -84,18 +82,10 @@ export function HabitTracker(props: { nav: NavMe }) {
   // Load, reload when the app comes back, and roll over at local midnight.
   useEffect(() => {
     void load();
-    const onVisible = () =>
-      document.visibilityState === "visible" && void load();
+    const onVisible = () => document.visibilityState === "visible" && void load();
     document.addEventListener("visibilitychange", onVisible);
     const now = new Date();
-    const midnight = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + 1,
-      0,
-      0,
-      5,
-    );
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
     const t = setTimeout(() => void load(), midnight.getTime() - now.getTime());
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
@@ -108,9 +98,7 @@ export function HabitTracker(props: { nav: NavMe }) {
     const done = !data.checked.includes(h.id);
     setData({
       ...data,
-      checked: done
-        ? [...data.checked, h.id]
-        : data.checked.filter((id) => id !== h.id),
+      checked: done ? [...data.checked, h.id] : data.checked.filter((id) => id !== h.id),
     });
     try {
       const { token } = await post({ action: "check", id: h.id, done });
@@ -127,9 +115,7 @@ export function HabitTracker(props: { nav: NavMe }) {
   }
 
   async function remove(h: Habit) {
-    setData((d) =>
-      d ? { ...d, habits: d.habits.filter((x) => x.id !== h.id) } : d,
-    );
+    setData((d) => (d ? { ...d, habits: d.habits.filter((x) => x.id !== h.id) } : d));
     try {
       await post({ action: "remove", id: h.id });
     } catch (err) {
@@ -144,17 +130,10 @@ export function HabitTracker(props: { nav: NavMe }) {
     <AppShell header={<AppNav active="profile" me={props.nav} />}>
       <div className="mx-auto w-full max-w-2xl px-6 pt-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+2rem))]">
         <div className="flex items-center justify-between">
-          <a
-            href="/profile"
-            className="text-xs tracking-[0.2em] text-mute uppercase hover:text-paper"
-          >
+          <a href="/profile" className="text-xs tracking-[0.2em] text-mute uppercase hover:text-paper">
             ← Profile
           </a>
-          <div
-            className="flex border border-line"
-            role="tablist"
-            aria-label="Habit tracker"
-          >
+          <div className="flex border border-line" role="tablist" aria-label="Habit tracker">
             {(["today", "log"] as const).map((l) => (
               <button
                 key={l}
@@ -163,9 +142,7 @@ export function HabitTracker(props: { nav: NavMe }) {
                 aria-selected={layer === l}
                 onClick={() => setLayer(l)}
                 className={`px-4 py-2 text-xs tracking-[0.2em] uppercase transition-colors ${
-                  layer === l
-                    ? "bg-paper text-ink"
-                    : "text-paper/60 hover:text-paper"
+                  layer === l ? "bg-paper text-ink" : "text-paper/60 hover:text-paper"
                 }`}
               >
                 {l === "today" ? "Today" : "Log"}
@@ -174,9 +151,7 @@ export function HabitTracker(props: { nav: NavMe }) {
           </div>
         </div>
 
-        <h1 className="font-display mt-8 text-3xl font-bold tracking-tight">
-          HABIT TRACKER
-        </h1>
+        <h1 className="font-display mt-8 text-3xl font-bold tracking-tight">HABIT TRACKER</h1>
         {error && <p className="mt-4 text-sm text-mute">{error}</p>}
         {!data ? (
           !error && <p className="mt-8 text-paper/50">Loading…</p>
@@ -222,8 +197,7 @@ function Today(props: {
     <>
       <div className="mt-2 flex items-baseline justify-between gap-4">
         <p className="text-paper/60">
-          {data.weekday},{" "}
-          {shortDate(data.date, { month: "long", day: "numeric" })}
+          {data.weekday}, {shortDate(data.date, { month: "long", day: "numeric" })}
         </p>
         {data.habits.length > 0 && (
           <button
@@ -238,9 +212,8 @@ function Today(props: {
 
       {!props.complete && (
         <div className="mt-6 border border-line px-5 py-4 text-sm leading-relaxed text-paper/70">
-          Choose your own habits: at least {TIER_MIN.must} must dos,{" "}
-          {TIER_MIN.want} want to do and {TIER_MIN.wish} wish to do. That
-          completes your profile.
+          Choose your own habits: at least {TIER_MIN.must} must dos, {TIER_MIN.want} want to do and {TIER_MIN.wish} wish
+          to do. That completes your profile.
         </div>
       )}
 
@@ -302,9 +275,7 @@ function TierList(props: {
   return (
     <section className="mt-10">
       <div className="flex items-baseline justify-between border-b border-line pb-2">
-        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">
-          {TIER_LABEL[props.tier]}
-        </h2>
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">{TIER_LABEL[props.tier]}</h2>
         {props.habits.length > 0 && (
           <span className="text-xs tracking-[0.15em] text-paper/60 tabular-nums">
             {done}/{props.habits.length}
@@ -315,10 +286,7 @@ function TierList(props: {
         {props.habits.map((h) => {
           const on = props.checked.includes(h.id);
           return (
-            <li
-              key={h.id}
-              className="flex items-center gap-3 border-b border-line/60"
-            >
+            <li key={h.id} className="flex items-center gap-3 border-b border-line/60">
               <button
                 type="button"
                 role="checkbox"
@@ -335,17 +303,11 @@ function TierList(props: {
                 >
                   {on && (
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path
-                        d="M2.5 6.5 5 9l4.5-6"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      />
+                      <path d="M2.5 6.5 5 9l4.5-6" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
                   )}
                 </span>
-                <span
-                  className={`text-lg leading-snug ${on ? "text-paper/50 line-through" : "text-paper"}`}
-                >
+                <span className={`text-lg leading-snug ${on ? "text-paper/50 line-through" : "text-paper"}`}>
                   {h.title}
                 </span>
               </button>
@@ -364,10 +326,7 @@ function TierList(props: {
         })}
       </ul>
       {props.editing && props.habits.length < TIER_MAX && (
-        <form
-          onSubmit={add}
-          className="mt-3 flex items-center gap-3 border-b border-line pb-2"
-        >
+        <form onSubmit={add} className="mt-3 flex items-center gap-3 border-b border-line pb-2">
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -388,8 +347,7 @@ function TierList(props: {
       )}
       {short > 0 && (
         <p className="mt-2 text-xs text-mute">
-          Add {short} more {short === 1 ? label : `${label}s`} to complete your
-          profile.
+          Add {short} more {short === 1 ? label : `${label}s`} to complete your profile.
         </p>
       )}
       {error && <p className="mt-2 text-xs text-mute">{error}</p>}
@@ -398,13 +356,7 @@ function TierList(props: {
 }
 
 /** Sleep sits first. Until it's logged it's loud: the profile button stays red too. */
-function Sleep({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (hours: number) => void;
-}) {
+function Sleep({ value, onChange }: { value: number | null; onChange: (hours: number) => void }) {
   const [local, setLocal] = useState<number | null>(value);
   const [picked, setPicked] = useState(8);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -439,19 +391,12 @@ function Sleep({
 
   if (local === null) {
     return (
-      <section
-        className="mt-8 border-2 border-status-red px-5 py-6"
-        aria-label="Log your sleep"
-      >
-        <p className="text-xs tracking-[0.2em] text-status-red uppercase">
-          Sleep not logged
-        </p>
+      <section className="mt-8 border-2 border-status-red px-5 py-6" aria-label="Log your sleep">
+        <p className="text-xs tracking-[0.2em] text-status-red uppercase">Sleep not logged</p>
         <h2 className="font-display mt-3 text-2xl leading-tight font-bold tracking-tight">
           How much did you sleep last night?
         </h2>
-        <p className="font-display mt-6 text-center text-4xl font-bold tabular-nums">
-          {sleepLabel(picked)}
-        </p>
+        <p className="font-display mt-6 text-center text-4xl font-bold tabular-nums">{sleepLabel(picked)}</p>
         {slider(picked, setPicked, "accent-status-red")}
         <button
           type="button"
@@ -470,12 +415,8 @@ function Sleep({
   return (
     <section className="mt-10">
       <div className="flex items-baseline justify-between border-b border-line pb-2">
-        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">
-          Sleep last night
-        </h2>
-        <span className="text-sm text-paper tabular-nums">
-          {sleepLabel(local)}
-        </span>
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Sleep last night</h2>
+        <span className="text-sm text-paper tabular-nums">{sleepLabel(local)}</span>
       </div>
       {slider(local, change, "accent-paper")}
     </section>
@@ -491,13 +432,7 @@ const HOLD_MS = 3000;
  * The grid and sleep graph. Holding anywhere on the log for 3 seconds offers
  * "Edit log", which opens the month full screen so past days can be fixed.
  */
-function Log({
-  data,
-  onToggleToday,
-}: {
-  data: Data;
-  onToggleToday: (h: Habit) => void;
-}) {
+function Log({ data, onToggleToday }: { data: Data; onToggleToday: (h: Habit) => void }) {
   const [grid, setGrid] = useState<Grid | null>(null);
   const [menu, setMenu] = useState(false);
   // The finger that held for 3 seconds is still down when the menu appears;
@@ -553,31 +488,21 @@ function Log({
     try {
       await post({ action: "check", id: h.id, done, day });
     } catch {
-      setGrid((g) =>
-        g ? { ...g, checked: { ...g.checked, [day]: before } } : g,
-      );
+      setGrid((g) => (g ? { ...g, checked: { ...g.checked, [day]: before } } : g));
     }
   }
 
   const todayCounts: DayCounts = Object.fromEntries(
     TIERS.map((t) => {
       const inTier = data.habits.filter((h) => h.tier === t);
-      return [
-        t,
-        [
-          inTier.filter((h) => data.checked.includes(h.id)).length,
-          inTier.length,
-        ],
-      ];
+      return [t, [inTier.filter((h) => data.checked.includes(h.id)).length, inTier.length]];
     }),
   ) as DayCounts;
   const days: LogDay[] = [
     {
       day: data.date,
       counts: todayCounts,
-      checked: data.habits
-        .filter((h) => data.checked.includes(h.id))
-        .map((h) => h.title),
+      checked: data.habits.filter((h) => data.checked.includes(h.id)).map((h) => h.title),
       sleep: data.sleep,
     },
     ...data.log,
@@ -593,15 +518,8 @@ function Log({
       onContextMenu={(e) => e.preventDefault()}
       className="select-none [-webkit-touch-callout:none]"
     >
-      <HabitGrid
-        today={data.date}
-        habits={data.habits}
-        todayChecked={data.checked}
-        grid={grid}
-      />
-      <p className="mt-3 text-xs text-mute">
-        Hold the log for 3 seconds to edit it.
-      </p>
+      <HabitGrid today={data.date} habits={data.habits} todayChecked={data.checked} grid={grid} />
+      <p className="mt-3 text-xs text-mute">Hold the log for 3 seconds to edit it.</p>
       <SleepChart days={days.slice(0, 14).reverse()} today={data.date} />
 
       {menu && (
@@ -668,9 +586,7 @@ function EditLog(props: {
     >
       <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-6 pb-4">
         <div>
-          <p className="text-xs tracking-[0.2em] text-mute uppercase">
-            Edit log
-          </p>
+          <p className="text-xs tracking-[0.2em] text-mute uppercase">Edit log</p>
           <h2 className="font-display mt-1 text-2xl font-bold tracking-tight">
             {shortDate(props.today, { month: "long", year: "numeric" })}
           </h2>
@@ -683,22 +599,14 @@ function EditLog(props: {
           Done
         </button>
       </div>
-      <p className="mx-auto w-full max-w-2xl px-6 text-sm text-paper/60">
-        Tap a box to check or uncheck it.
-      </p>
+      <p className="mx-auto w-full max-w-2xl px-6 text-sm text-paper/60">Tap a box to check or uncheck it.</p>
       <div className="mx-auto mt-4 w-full max-w-2xl flex-1 overflow-auto px-6">
         <GridTable
           days={gridDays("month", props.today, null)}
           habits={props.habits}
           today={props.today}
           first={null}
-          checkedOn={(day) =>
-            new Set(
-              day === props.today
-                ? props.todayChecked
-                : (props.grid?.checked[day] ?? []),
-            )
-          }
+          checkedOn={(day) => new Set(day === props.today ? props.todayChecked : (props.grid?.checked[day] ?? []))}
           onToggle={props.onToggle}
           size="lg"
         />
@@ -714,12 +622,7 @@ function EditLog(props: {
  * month; "Total progress" runs from the first tracked day and grows a column
  * a day. It opens scrolled to today.
  */
-function HabitGrid(props: {
-  today: string;
-  habits: Habit[];
-  todayChecked: number[];
-  grid: Grid | null;
-}) {
+function HabitGrid(props: { today: string; habits: Habit[]; todayChecked: number[]; grid: Grid | null }) {
   const [mode, setMode] = useState<"month" | "total">("month");
   const days = gridDays(mode, props.today, props.grid?.first ?? null);
 
@@ -727,15 +630,9 @@ function HabitGrid(props: {
     <section className="mt-8">
       <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
         <h2 className="text-xs tracking-[0.2em] text-mute uppercase">
-          {mode === "month"
-            ? shortDate(props.today, { month: "long" })
-            : "Since day one"}
+          {mode === "month" ? shortDate(props.today, { month: "long" }) : "Since day one"}
         </h2>
-        <div
-          className="flex border border-line"
-          role="tablist"
-          aria-label="Grid view"
-        >
+        <div className="flex border border-line" role="tablist" aria-label="Grid view">
           {(
             [
               ["month", "Month"],
@@ -749,9 +646,7 @@ function HabitGrid(props: {
               aria-selected={mode === m}
               onClick={() => setMode(m)}
               className={`px-3 py-1.5 text-[10px] tracking-[0.15em] uppercase transition-colors ${
-                mode === m
-                  ? "bg-paper text-ink"
-                  : "text-paper/60 hover:text-paper"
+                mode === m ? "bg-paper text-ink" : "text-paper/60 hover:text-paper"
               }`}
             >
               {text}
@@ -766,13 +661,7 @@ function HabitGrid(props: {
           habits={props.habits}
           today={props.today}
           first={props.grid?.first ?? props.today}
-          checkedOn={(day) =>
-            new Set(
-              day === props.today
-                ? props.todayChecked
-                : (props.grid?.checked[day] ?? []),
-            )
-          }
+          checkedOn={(day) => new Set(day === props.today ? props.todayChecked : (props.grid?.checked[day] ?? []))}
         />
       </div>
     </section>
@@ -798,19 +687,11 @@ function GridTable(props: {
   useEffect(() => {
     const el = scroller.current;
     const cell = el?.querySelector<HTMLElement>("[data-today]");
-    if (el && cell)
-      el.scrollLeft +=
-        cell.getBoundingClientRect().right -
-        el.getBoundingClientRect().right +
-        8;
+    if (el && cell) el.scrollLeft += cell.getBoundingClientRect().right - el.getBoundingClientRect().right + 8;
   }, [props.days.length]);
 
   if (habits.length === 0) {
-    return (
-      <p className="text-sm text-paper/60">
-        Add habits on the Today tab to start your grid.
-      </p>
-    );
+    return <p className="text-sm text-paper/60">Add habits on the Today tab to start your grid.</p>;
   }
 
   return (
@@ -865,18 +746,13 @@ function GridTable(props: {
                   </th>
                   {props.days.map((day) => {
                     const future = day > props.today;
-                    const outside =
-                      future || (props.first !== null && day < props.first);
+                    const outside = future || (props.first !== null && day < props.first);
                     const on = !future && props.checkedOn(day).has(h.id);
                     const label = `${h.title}, ${shortDate(day, { month: "short", day: "numeric" })}: ${
                       future ? "not yet" : on ? "done" : "not done"
                     }`;
                     const look = `block ${box} border ${
-                      on
-                        ? "border-paper bg-paper"
-                        : outside
-                          ? "border-line/50"
-                          : "border-paper/35"
+                      on ? "border-paper bg-paper" : outside ? "border-line/50" : "border-paper/35"
                     }`;
                     return (
                       <td key={day} className="p-0">
@@ -890,11 +766,7 @@ function GridTable(props: {
                             className={`${look} transition-colors active:opacity-70`}
                           />
                         ) : (
-                          <span
-                            role="img"
-                            aria-label={label}
-                            className={look}
-                          />
+                          <span role="img" aria-label={label} className={look} />
                         )}
                       </td>
                     );
@@ -921,20 +793,15 @@ function SleepChart({ days, today }: { days: LogDay[]; today: string }) {
   const plotH = H - bottom - top;
   const slot = plotW / days.length;
   const barW = Math.max(4, slot - 4);
-  const y = (h: number) =>
-    top + plotH - (Math.min(h, SLEEP_MAX) / SLEEP_MAX) * plotH;
+  const y = (h: number) => top + plotH - (Math.min(h, SLEEP_MAX) / SLEEP_MAX) * plotH;
   const logged = days.filter((d) => d.sleep !== null);
-  const avg = logged.length
-    ? logged.reduce((s, d) => s + d.sleep!, 0) / logged.length
-    : null;
+  const avg = logged.length ? logged.reduce((s, d) => s + d.sleep!, 0) / logged.length : null;
   const shown = active !== null ? days[active] : null;
 
   return (
     <section className="mt-8">
       <div className="flex items-baseline justify-between border-b border-line pb-2">
-        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">
-          Sleep · last 14 days
-        </h2>
+        <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Sleep · last 14 days</h2>
         <span className="text-sm text-paper/80 tabular-nums">
           {shown
             ? `${shortDate(shown.day, { weekday: "short", month: "short", day: "numeric" })} · ${
@@ -954,21 +821,8 @@ function SleepChart({ days, today }: { days: LogDay[]; today: string }) {
       >
         {[0, 4, 8, 12].map((h) => (
           <g key={h}>
-            <line
-              x1={left}
-              x2={W}
-              y1={y(h)}
-              y2={y(h)}
-              stroke="var(--color-line)"
-              strokeWidth={1}
-            />
-            <text
-              x={left - 6}
-              y={y(h) + 3}
-              textAnchor="end"
-              fontSize={9}
-              fill="var(--color-mute)"
-            >
+            <line x1={left} x2={W} y1={y(h)} y2={y(h)} stroke="var(--color-line)" strokeWidth={1} />
+            <text x={left - 6} y={y(h) + 3} textAnchor="end" fontSize={9} fill="var(--color-mute)">
               {h === 12 ? "12+" : h}
             </text>
           </g>
@@ -980,13 +834,7 @@ function SleepChart({ days, today }: { days: LogDay[]; today: string }) {
             <g key={d.day}>
               {d.sleep !== null && d.sleep > 0 ? (
                 <path
-                  d={roundedTop(
-                    x,
-                    y(d.sleep),
-                    barW,
-                    y(0) - y(d.sleep),
-                    Math.min(4, barW / 2),
-                  )}
+                  d={roundedTop(x, y(d.sleep), barW, y(0) - y(d.sleep), Math.min(4, barW / 2))}
                   fill="var(--color-paper)"
                   opacity={active === null || active === i ? 0.9 : 0.35}
                 />
@@ -995,9 +843,7 @@ function SleepChart({ days, today }: { days: LogDay[]; today: string }) {
                   cx={x + barW / 2}
                   cy={y(0) - 3}
                   r={1.5}
-                  fill={
-                    d.sleep === 0 ? "var(--color-paper)" : "var(--color-mute)"
-                  }
+                  fill={d.sleep === 0 ? "var(--color-paper)" : "var(--color-mute)"}
                 />
               )}
               {(i % 2 === days.length % 2 || isToday) && (
