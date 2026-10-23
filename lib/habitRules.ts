@@ -17,7 +17,10 @@ export const SLEEP_MAX = 12; // shown as "12+"
 
 export type Habit = { id: number; tier: Tier; title: string };
 
-/** A must do missed this many days in a row gets the coach's "get back up" (Proverbs 24:16). */
+/**
+ * A must do missed this many days in a row gets the coach's "get back up"
+ * (Proverbs 24:16) on the day after: miss 7, hear it on day 8.
+ */
 export const MISSED_RUN_DAYS = 7;
 /** Done / total per tier for one day. */
 export type DayCounts = Record<Tier, [number, number]>;
@@ -165,8 +168,8 @@ export function describeHabits(
     }
   }
 
-  // Must dos missed every day for a week or more, counted back from yesterday,
-  // and only over days the habit existed (a new habit hasn't been missed yet).
+  // Must dos missed every day for the last week (counted back from yesterday, and
+  // only over days the habit existed), so today is day 8 or later without it.
   const fallen = musts.flatMap((h) => {
     if (done.has(h.id)) return [];
     const since = h.since;
@@ -176,9 +179,12 @@ export function describeHabits(
       if ((since && d < since) || byDay.get(d)?.checked.includes(h.id)) break;
       run++;
     }
-    return run >= MISSED_RUN_DAYS ? [`- ${h.title}: missed ${run >= 60 ? "60+" : run} days in a row`] : [];
+    return run >= MISSED_RUN_DAYS
+      ? [`- ${h.title}: missed the last ${run >= 60 ? "60+" : run} days in a row, and not done yet today`]
+      : [];
   });
-  if (fallen.length) lines.push("", `Must dos missed ${MISSED_RUN_DAYS}+ days in a row:`, ...fallen);
+  if (fallen.length)
+    lines.push("", `Must dos not done in over a week (today is day ${MISSED_RUN_DAYS + 1} or later):`, ...fallen);
 
   const nights = window.map((d) => ({ d, h: byDay.get(d)?.sleep ?? null })).filter((n) => n.h !== null);
   if (nights.length) {

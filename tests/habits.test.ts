@@ -93,8 +93,14 @@ test("the coach hears about a must do missed 7+ days in a row, but not a new one
     { day: "2026-10-06", checked: [], sleep: 8 },
   ];
   const text = describeHabits(habits, days, "2026-10-13")!;
-  assert.match(text, /Must dos missed 7\+ days in a row:\n- h1: missed 42 days in a row\n- h3: missed 7 days in a row/);
+  assert.match(
+    text,
+    /Must dos not done in over a week \(today is day 8 or later\):\n- h1: missed the last 42 days in a row, and not done yet today\n- h3: missed the last 7 days in a row/,
+  );
   assert.doesNotMatch(text, /- h2: missed/);
   const fine = describeHabits(habits, [{ day: "2026-10-07", checked: [1, 3], sleep: 8 }], "2026-10-13")!;
   assert.doesNotMatch(fine, /missed/);
+  // Missed 6 days, today is day 7: not yet.
+  const day7 = describeHabits(habits, [{ day: "2026-10-06", checked: [1, 3], sleep: 8 }], "2026-10-13")!;
+  assert.doesNotMatch(day7, /missed/);
 });
