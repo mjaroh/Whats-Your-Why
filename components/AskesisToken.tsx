@@ -173,8 +173,8 @@ export function TokenEmblem({ className = "" }: { className?: string }) {
                 <>
                   <h2 className="font-display text-3xl font-bold tracking-tight">ASKESIS TOKENS</h2>
                   <p className="mt-3 text-sm leading-relaxed text-paper/60">
-                    One for every day you check off every habit and sleep 9½ to 10 hours. Tap a token to open its
-                    message.
+                    One for every day you check off all your must dos, at least one want to do and one wish to do, and
+                    sleep 9½ to 10 hours. Tap a token to open its message.
                   </p>
                   <ul className="mt-10 grid grid-cols-3 gap-x-4 gap-y-8">
                     {tokens.map((t) => (
