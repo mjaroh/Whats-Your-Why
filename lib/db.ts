@@ -163,13 +163,6 @@ async function ensureSchema(sql: postgres.Sql) {
       PRIMARY KEY (athlete_id, day)
     )`;
   await sql`
-    CREATE TABLE IF NOT EXISTS widget_tokens (
-      token_hash TEXT PRIMARY KEY,
-      athlete_id TEXT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      last_used_at TIMESTAMPTZ
-    )`;
-  await sql`
     CREATE TABLE IF NOT EXISTS rate_limits (
       key TEXT PRIMARY KEY,
       window_start TIMESTAMPTZ NOT NULL,

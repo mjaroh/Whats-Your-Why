@@ -20,8 +20,6 @@ import { AppNav, type NavMe } from "./AppNav";
 import { AppShell } from "./AppShell";
 import { TokenCelebration } from "./AskesisToken";
 import { Reminders } from "./Reminders";
-import { WidgetSetup } from "./WidgetSetup";
-import { refreshWidgets } from "@/lib/client/widgets";
 
 type LogDay = {
   day: string;
@@ -52,7 +50,6 @@ async function post(body: Record<string, unknown>) {
     token?: number | null;
   };
   if (!res.ok) throw new Error(data.error ?? "That didn't save. Try again.");
-  refreshWidgets();
   return data;
 }
 
@@ -236,7 +233,6 @@ function Today(props: {
       ))}
 
       <Reminders />
-      <WidgetSetup />
       <p className="mt-10 text-xs leading-relaxed text-mute">
         Your checklist starts fresh at midnight. Each day is saved to your log.
       </p>
