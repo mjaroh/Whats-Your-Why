@@ -9,6 +9,7 @@ permissions, app version).
 Native extras that make it more than a website (Apple guideline 4.2):
 
 - Morning and evening reminders on the habit tracker (iPhone notifications).
+- Home Screen and Lock Screen widgets for checking off must dos (iOS 17 or later).
 - Camera and photo library access for training videos and profile photos.
 - An offline screen if there's no internet.
 
@@ -37,16 +38,27 @@ Native extras that make it more than a website (Apple guideline 4.2):
 1. In the left sidebar click **App** (the blue icon at the top), then the **App** target, then **Signing & Capabilities**.
 2. Tick **Automatically manage signing** and pick your **Team** (your developer account).
 3. The **Bundle Identifier** is `app.whatsyourwhy.askesis`. Leave it, or change it if Apple says it's taken.
-4. **Try it on your iPhone.**
+   - If you change it, change the widget's too (next step) so it still starts with the app's.
+4. **Set up the widget target.** In the same list of targets, click **AskesisWidgetExtension** → **Signing & Capabilities**.
+   - Tick **Automatically manage signing** and pick the same **Team**. Its Bundle Identifier is `app.whatsyourwhy.askesis.widget`.
+   - Check that both **App** and **AskesisWidgetExtension** show **App Groups** with `group.app.whatsyourwhy.askesis` ticked. This is how the app hands the widget its key.
+   - If App Groups is missing or red on either one: click **+ Capability**, add **App Groups**, click **+**, type `group.app.whatsyourwhy.askesis`, and tick it.
+5. **Try it on your iPhone.**
    - Plug your phone in and choose it at the top of the window.
    - Press the ▶ button.
    - The first time, your iPhone asks you to trust the developer: go to Settings → General → VPN & Device Management.
-5. **Upload it to Apple.**
+6. **Try the widgets.**
+   - In the app, open the Habit tracker, scroll down to **Widgets**, and tap **Turn on widgets**.
+   - Follow the steps shown there to add one to your Home Screen and your Lock Screen.
+   - Tap a must do on the widget, then open the app: it should be checked there too.
+7. **Upload it to Apple.**
    - At the top, set the device to **Any iOS Device (arm64)**.
    - Choose **Product → Archive**.
    - When the Organizer window opens, click **Distribute App → App Store Connect → Upload**.
 
 For later uploads, raise the **Build** number by 1 each time (App target → General → Identity). Raise the **Version** (1.0 → 1.1) for releases people will notice.
+
+Change the **AskesisWidgetExtension** target's Version and Build to match every time. Apple rejects uploads where they differ.
 
 ## 3. In App Store Connect
 
@@ -89,7 +101,7 @@ THE GROUP
 Train alongside athletes who know their why. A daily group check-in, moderated for safety, with video sharing.
 
 HABIT TRACKER
-Set your own must do, want to do and wish to do habits. Log your sleep. See your month at a glance and your total progress since day one.
+Set your own must do, want to do and wish to do habits. Log your sleep. See your month at a glance and your total progress since day one. Check off your must dos right from your Home Screen or Lock Screen with widgets.
 
 COUNT DOWN TO WHAT MATTERS
 Set your big day — a meet, tryouts, your first game — and watch it come closer. Olympic-sport athletes also get a live countdown to LA 2028.
@@ -134,6 +146,7 @@ No tracking, no ads, no data sold.
   ```
   Askesis helps teen athletes (13+) find their purpose and build habits.
   - Account deletion: Profile → ••• menu → Delete account.
+  - Widgets: Profile → Habit tracker → scroll to Widgets → Turn on widgets, then add the "Must dos" widget to the Home Screen or Lock Screen.
   - Membership is purchased on our website via Stripe (US storefront, external purchase link).
   - Group chat is moderated: messages are screened automatically before posting, users can report messages, and admins can remove content and ban users. Videos are approved by an admin before others see them.
   - The coach is an AI; it shows crisis resources (988, Crisis Text Line) if a message suggests someone may be in danger.

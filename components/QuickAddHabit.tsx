@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { refreshWidgets } from "@/lib/client/widgets";
 import { HABIT_MAX_CHARS, TIER_LABEL, TIER_MAX, TIERS, type Habit, type Tier } from "@/lib/habitRules";
 
 const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -50,6 +51,7 @@ export function QuickAddHabit({ armed, onClose }: { armed: boolean; onClose: (ch
       const data = (await res.json().catch(() => ({}))) as { error?: string; habit?: Habit };
       if (!res.ok || !data.habit) throw new Error(data.error ?? "That didn't save. Try again.");
       setHabits((all) => [...(all ?? []), data.habit!]);
+      refreshWidgets();
       setDraft("");
       setAdded((n) => n + 1);
     } catch (err) {
