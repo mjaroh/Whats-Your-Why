@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Jost } from "next/font/google";
 import { Intro } from "@/components/Intro";
 import { introHeadScript } from "@/lib/intro";
+import { seasonHeadScript } from "@/lib/liturgical";
 import { clerkEnabled } from "@/lib/clerk";
 import { clerkAppearance } from "@/lib/clerkTheme";
 import "./globals.css";
@@ -23,13 +24,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0b0b0a",
+  // themeColor is set by seasonHeadScript: it follows the day's color.
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={jost.variable} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: seasonHeadScript }} />
         <script dangerouslySetInnerHTML={{ __html: introHeadScript }} />
       </head>
       <body>

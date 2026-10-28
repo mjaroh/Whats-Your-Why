@@ -391,20 +391,20 @@ function Sleep({ value, onChange }: { value: number | null; onChange: (hours: nu
 
   if (local === null) {
     return (
-      <section className="mt-8 border-2 border-status-red px-5 py-6" aria-label="Log your sleep">
-        <p className="text-xs tracking-[0.2em] text-status-red uppercase">Sleep not logged</p>
+      <section className="mt-8 border-2 border-alert px-5 py-6" aria-label="Log your sleep">
+        <p className="text-xs tracking-[0.2em] text-alert uppercase">Sleep not logged</p>
         <h2 className="font-display mt-3 text-2xl leading-tight font-bold tracking-tight">
           How much did you sleep last night?
         </h2>
         <p className="font-display mt-6 text-center text-4xl font-bold tabular-nums">{sleepLabel(picked)}</p>
-        {slider(picked, setPicked, "accent-status-red")}
+        {slider(picked, setPicked, "accent-alert")}
         <button
           type="button"
           onClick={() => {
             setLocal(picked);
             onChange(picked);
           }}
-          className="mt-6 w-full bg-status-red py-4 text-sm tracking-[0.2em] text-ink uppercase"
+          className="mt-6 w-full bg-status-red py-4 text-sm tracking-[0.2em] text-night uppercase"
         >
           Log {sleepLabel(picked)}
         </button>

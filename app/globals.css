@@ -5,12 +5,56 @@
   --color-paper: #f2efe8;
   --color-mute: #8a867e;
   --color-line: #2a2926;
+  /* Stays near-black whatever the day's color (text on colored buttons). */
+  --color-night: #0b0b0a;
+  /* Red text and outlines; lighter on the red and gold days so it still shows. */
+  --color-alert: #d4544a;
   /* Habit tracker button: how today is going. */
   --color-status-red: #d4544a;
   --color-status-yellow: #e0b23e;
   --color-status-green: #5aa86c;
   --font-display: "Futura", "Futura PT", var(--font-jost), "Century Gothic", sans-serif;
   --font-body: "Futura", "Futura PT", var(--font-jost), "Century Gothic", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* The color of the day, from the Orthodox Church year (lib/liturgical.ts sets
+   data-season on <html> before the page is drawn). Everything that was black
+   takes the day's color; lines and muted text are tinted to match. */
+:root[data-season="sunday"] {
+  --color-ink: #614810; /* gold */
+  --color-line: #786333;
+  --color-mute: #bbb096;
+  --color-alert: #ffb3a7;
+}
+:root[data-season="ordinary"] {
+  --color-ink: #173a28; /* green */
+  --color-line: #3a5747;
+  --color-mute: #9faa9f;
+  --color-alert: #ff8f82;
+}
+:root[data-season="feast"] {
+  --color-ink: #1c4a31; /* festal green */
+  --color-line: #3e644e;
+  --color-mute: #a1b0a2;
+  --color-alert: #ff9d91;
+}
+:root[data-season="fast"] {
+  --color-ink: #5e2213; /* burnt red */
+  --color-line: #764335;
+  --color-mute: #baa197;
+  --color-alert: #ffa99d;
+}
+:root[data-season="lent"] {
+  --color-ink: #4d1219; /* Lenten red */
+  --color-line: #67353a;
+  --color-mute: #b39b99;
+  --color-alert: #ffa99d;
+}
+:root[data-season="theotokos"] {
+  --color-ink: #15264a; /* the Theotokos' blue */
+  --color-line: #384663;
+  --color-mute: #9ea3ac;
+  --color-alert: #ff8f82;
 }
 
 html,
