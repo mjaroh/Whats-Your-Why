@@ -355,15 +355,15 @@ export function Profile(props: {
 const HABIT_BUTTON: Record<TodayStatus, { className: string; status: string }> = {
   unset: { className: "border-paper/40 text-paper", status: "" },
   none: {
-    className: "border-status-red bg-status-red text-ink",
+    className: "border-status-red bg-status-red text-night",
     status: "Sleep not logged yet",
   },
   started: {
-    className: "border-status-yellow bg-status-yellow text-ink",
+    className: "border-status-yellow bg-status-yellow text-night",
     status: "Must dos in progress",
   },
   musts: {
-    className: "border-status-green bg-status-green text-ink",
+    className: "border-status-green bg-status-green text-night",
     status: "All must dos done",
   },
   done: {

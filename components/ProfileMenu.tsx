@@ -76,7 +76,7 @@ export function ProfileMenu(props: { member: boolean; admin: boolean }) {
               setOpen(false);
               setConfirmDelete(true);
             }}
-            className={`${item} text-status-red`}
+            className={`${item} text-alert`}
           >
             Delete account
           </button>
@@ -104,7 +104,7 @@ export function ProfileMenu(props: { member: boolean; admin: boolean }) {
               type="button"
               onClick={deleteAccount}
               disabled={deleting}
-              className="mt-6 w-full bg-status-red py-4 text-sm tracking-[0.2em] text-ink uppercase disabled:opacity-50"
+              className="mt-6 w-full bg-status-red py-4 text-sm tracking-[0.2em] text-night uppercase disabled:opacity-50"
             >
               {deleting ? "Deleting…" : "Delete my account"}
             </button>
