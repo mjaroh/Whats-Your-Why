@@ -67,13 +67,18 @@ export async function generateCheckin(opts: {
 
 /** The group's daily check-in, in Michael's voice but for everyone. */
 export async function generateGroupCheckin(weekday: string, recent: string[]): Promise<string> {
-  const response = await anthropic().messages.create({
-    model: MODEL,
-    max_tokens: 2000,
-    system: `You write for Askesis, in the voice of Michael Jaroh.\n\n<voice>\n${VOICE_GUIDE}\n</voice>`,
-    messages: [{ role: "user", content: groupCheckinPrompt(weekday, recent) }],
-    output_config: { effort: "low" },
-  });
+  const response = await anthropic().messages.create(
+    {
+      model: MODEL,
+      max_tokens: 2000,
+      system: `You write for Askesis, in the voice of Michael Jaroh.\n\n<voice>\n${VOICE_GUIDE}\n</voice>`,
+      messages: [{ role: "user", content: groupCheckinPrompt(weekday, recent) }],
+      output_config: { effort: "low" },
+    },
+    // It's written while someone waits for the group chat to load (a 30-second
+    // request), so give up early and let the built-in question stand in.
+    { timeout: 15_000, maxRetries: 1 },
+  );
   if (response.stop_reason === "refusal") throw new Error("group check-in refused");
   const text = response.content
     .map((b) => (b.type === "text" ? b.text : ""))
