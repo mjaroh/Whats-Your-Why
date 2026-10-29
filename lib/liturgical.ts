@@ -78,6 +78,7 @@ export const SEASON_COLORS: Record<Season, string> = {
 /**
  * Sets today's season on <html> (and the browser bar color) before the page
  * is drawn, and again whenever the app comes back, so it turns over at
- * midnight.
+ * midnight. If React redraws <html> (it does after a page renders differently
+ * on the phone than on the server) and drops the attribute, it's put back.
  */
-export const seasonHeadScript = `(function(){var s=${liturgicalSeason.toString()},c=${JSON.stringify(SEASON_COLORS)};function apply(){try{var k=s(new Date()),r=document.documentElement;r.dataset.season=k;var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.name="theme-color";document.head.appendChild(m)}m.content=c[k]}catch(e){}}apply();document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")apply()})})();`;
+export const seasonHeadScript = `(function(){var s=${liturgicalSeason.toString()},c=${JSON.stringify(SEASON_COLORS)};function apply(){try{var k=s(new Date()),r=document.documentElement;r.dataset.season=k;var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.name="theme-color";document.head.appendChild(m)}m.content=c[k]}catch(e){}}apply();new MutationObserver(function(){if(!document.documentElement.dataset.season)apply()}).observe(document.documentElement,{attributes:true,attributeFilter:["data-season"]});document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")apply()})})();`;
