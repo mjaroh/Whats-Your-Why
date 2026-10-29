@@ -28,7 +28,7 @@ export function streamCoachReply(opts: {
   }
   return anthropic().messages.stream({
     model: MODEL,
-    max_tokens: 4000,
+    max_tokens: 16000,
     system: [
       {
         type: "text",
@@ -50,7 +50,7 @@ export async function generateCheckin(opts: {
 }): Promise<string> {
   const response = await anthropic().messages.create({
     model: MODEL,
-    max_tokens: 2000,
+    max_tokens: 16000,
     system: coachSystemPrompt(opts.firstName, opts.why, opts.habits ?? null),
     messages: [{ role: "user", content: checkinPrompt(opts.firstName, opts.weekday, opts.recentCheckins) }],
     output_config: { effort: "low" },
@@ -70,7 +70,7 @@ export async function generateGroupCheckin(weekday: string, recent: string[]): P
   const response = await anthropic().messages.create(
     {
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 16000,
       system: `You write for Askesis, in the voice of Michael Jaroh.\n\n<voice>\n${VOICE_GUIDE}\n</voice>`,
       messages: [{ role: "user", content: groupCheckinPrompt(weekday, recent) }],
       output_config: { effort: "low" },
