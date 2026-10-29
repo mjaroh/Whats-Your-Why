@@ -243,7 +243,11 @@ export function Profile(props: {
                             alt=""
                             className="h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
                           />
-                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-6 pb-2 text-xs text-paper/90">
+                          {/* The date is written in the phone's time zone, which the server can't know. */}
+                          <span
+                            suppressHydrationWarning
+                            className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-6 pb-2 text-xs text-paper/90"
+                          >
                             {when(v.at)}
                             {v.note ? ` · ${v.note}` : ""}
                           </span>
