@@ -5,6 +5,7 @@ import type { CoachMessage, Why } from "../athletes";
 import { stripTags, toApiMessages } from "./history";
 import { checkinPrompt, coachSystemPrompt, groupCheckinPrompt } from "./prompt";
 import { VOICE_GUIDE } from "./voice";
+import { fixOpeningDay, opensWithWrongDay } from "./weekday";
 
 /** A new athlete turn: plain text, or text plus images (video frames). */
 export type AthleteTurn = string | Anthropic.ContentBlockParam[];
@@ -41,6 +42,17 @@ export function streamCoachReply(opts: {
   });
 }
 
+/**
+ * Writes a check-in, and writes it once more if it opens by naming the wrong
+ * day; if the second one does too, today's name is put in.
+ */
+async function onTheRightDay(weekday: string, write: (note: string) => Promise<string>): Promise<string> {
+  const first = await write("");
+  if (!opensWithWrongDay(first, weekday)) return first;
+  const second = await write(`\n\nToday is ${weekday}. Don't call it any other day.`);
+  return fixOpeningDay(second, weekday);
+}
+
 export async function generateCheckin(opts: {
   firstName: string | null;
   why: Why | null;
@@ -48,11 +60,15 @@ export async function generateCheckin(opts: {
   weekday: string;
   recentCheckins: string[];
 }): Promise<string> {
+  return onTheRightDay(opts.weekday, (note) => writeCheckin(opts, note));
+}
+
+async function writeCheckin(opts: Parameters<typeof generateCheckin>[0], note: string): Promise<string> {
   const response = await anthropic().messages.create({
     model: MODEL,
     max_tokens: 16000,
     system: coachSystemPrompt(opts.firstName, opts.why, opts.habits ?? null),
-    messages: [{ role: "user", content: checkinPrompt(opts.firstName, opts.weekday, opts.recentCheckins) }],
+    messages: [{ role: "user", content: checkinPrompt(opts.firstName, opts.weekday, opts.recentCheckins) + note }],
     output_config: { effort: "low" },
   });
   if (response.stop_reason === "refusal") throw new Error("check-in refused");
@@ -67,6 +83,11 @@ export async function generateCheckin(opts: {
 
 /** The group's daily check-in, in Michael's voice but for everyone. */
 export async function generateGroupCheckin(weekday: string, recent: string[]): Promise<string> {
+  // No second try here (there's no time for one): the day's name is put right instead.
+  return fixOpeningDay(await writeGroupCheckin(weekday, recent), weekday);
+}
+
+async function writeGroupCheckin(weekday: string, recent: string[]): Promise<string> {
   const response = await anthropic().messages.create(
     {
       model: MODEL,
