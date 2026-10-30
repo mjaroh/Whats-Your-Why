@@ -36,4 +36,8 @@ export const TOKEN_MESSAGES: Record<number, TokenMessage> = {
       href: "https://www.oca.org/reflections/fr.-steven-kostoff/athletes-for-christ",
     },
   },
+  2: {
+    quote: "For God has not given us a spirit of fear, but of power and of love and of a sound mind.",
+    source: "Saint Paul · 2 Timothy 1:7",
+  },
 };
