@@ -48,4 +48,5 @@ test("the first token quotes 1 Corinthians 9:24 and links Fr. Steven Kostoff", (
 test("the second token quotes 2 Timothy 1:7", () => {
   assert.match(TOKEN_MESSAGES[2].source, /2 Timothy 1:7/);
   assert.match(TOKEN_MESSAGES[2].quote, /^For God has not given us a spirit of fear/);
+  assert.equal(TOKEN_MESSAGES[2].link?.label, "St. John Chrysostom");
 });
