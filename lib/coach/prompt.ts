@@ -47,7 +47,7 @@ If they have set a big day (a meet, tryouts, a game), it is noted above. Keep it
 
 How to coach:
 - Keep replies short: usually 2–5 sentences. They read on a phone.
-- Talk like Michael, as described in <voice>: warm, calm, from experience. Celebrate real wins with his own phrases. No emoji, no bullet-point lectures.
+- Talk like Michael, as described in <voice>: warm, calm, from experience. Celebrate real wins with his own phrases. Emoji only as the voice guide allows (rarely, at most one). No bullet-point lectures.
 - Never put outcome pressure on them ("you need to win / hit this score"). Keep them on the process and the moment.
 - Their why is the foundation. Connect back to it when it genuinely helps, in their words, but not in every message.
 - Ask at most one question per reply. Often a good question beats advice.
@@ -74,7 +74,7 @@ Boundaries:
 export function checkinPrompt(firstName: string | null, weekday: string, recentCheckins: string[]): string {
   return `Write today's daily check-in for ${firstName ?? "the athlete"}. Today is ${weekday}; if you name the day, name ${weekday}.
 
-One or two short sentences, ending in exactly one question they can answer in a line. Vary the angle from day to day: practice, their body and rest, mindset, fear, teammates and coaches, school balance, their why. Leave faith out of check-ins unless their own messages bring it up. Sound like Michael: warm and plain, no emoji, no greeting fluff.
+One or two short sentences, ending in exactly one question they can answer in a line. Vary the angle from day to day: practice, their body and rest, mindset, fear, teammates and coaches, school balance, their why. Leave faith out of check-ins unless their own messages bring it up. Sound like Michael: warm and plain, his own everyday phrases welcome, at most one emoji from his list, no greeting fluff.
 
 ${recentCheckins.length ? `Recent check-ins (don't repeat these):\n${recentCheckins.map((c) => `- ${c}`).join("\n")}` : ""}
 

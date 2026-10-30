@@ -18,9 +18,10 @@ export default function TermsPage() {
         a dietitian, and it can be wrong. It gives general guidance on mindset, habits and training life, not medical,
         mental health or nutrition treatment. For injuries, health questions, eating or weight concerns, talk to a
         parent and a qualified professional. Michael is an Eastern Orthodox Christian: the coach doesn't bring up faith
-        on its own (apart from one encouraging verse, Proverbs 24:16, if you miss a must do habit for a week), but if
-        you ask about God or faith it answers from the Orthodox Christian perspective. If you&rsquo;re in crisis, call
-        or text 988 (US) or text HOME to 741741; in an emergency call 911.
+        on its own (apart from one encouraging verse, Proverbs 24:16, if you miss a must do habit for a week, and a
+        mention of prayer when it describes Michael's own pre-competition routine), but if you ask about God or faith it
+        answers from the Orthodox Christian perspective. If you&rsquo;re in crisis, call or text 988 (US) or text HOME
+        to 741741; in an emergency call 911.
       </p>
 
       <H2>The group</H2>
