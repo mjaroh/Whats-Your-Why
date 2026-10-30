@@ -7,6 +7,9 @@ type StoredMessage = {
   media_id?: number | null;
 };
 
+/** What the coach says when a reply fails (saved like any reply). */
+export const COACH_FALLBACK = "I lost my train of thought there. Say that again?";
+
 /** How a stored message reads to the model (past videos appear as a note, not frames). */
 function asText(m: StoredMessage): string {
   if (m.kind === "checkin") return `[Daily check-in] ${m.content}`;
@@ -27,6 +30,8 @@ export function toApiMessages(history: StoredMessage[], latest: string): Anthrop
     else turns.push({ role, text });
   };
   for (const m of history) {
+    // Failed replies aren't part of the conversation; leaving them in teaches the model to repeat them.
+    if (m.role === "assistant" && m.content === COACH_FALLBACK) continue;
     push(m.role, asText(m));
   }
   push("user", latest);

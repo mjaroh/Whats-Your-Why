@@ -2,8 +2,7 @@ import "server-only";
 import { addMessage, type CoachMessage, type Why } from "../athletes";
 import { REPLY_ID_MARKER } from "../constants";
 import { streamCoachReply, type AthleteTurn } from "./claude";
-
-const FALLBACK = "I lost my train of thought there. Say that again?";
+import { COACH_FALLBACK as FALLBACK } from "./history";
 
 /**
  * Streams the coach's reply as plain text and saves it. The stream ends with

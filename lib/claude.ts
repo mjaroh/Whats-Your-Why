@@ -9,10 +9,17 @@ import type { ConcernCategory } from "./keywords";
 // Server only. The key is read from ANTHROPIC_API_KEY by the SDK and never
 // leaves this process.
 //
-// max_tokens is generous even where the answer is a few words: the model
-// thinks first, and that thinking counts toward it. A tight limit cut off
-// harder calls (a group message about pain) before they answered.
+// max_tokens matters twice: thinking counts toward it, and the API's
+// output-tokens-per-minute rate limit is charged by it up front (adjusted
+// once the reply is done). Too low and a call that thinks runs out before it
+// answers; too high and every request is turned away by the rate limit.
 export const MODEL = "claude-sonnet-5";
+
+/**
+ * For short yes/no style calls (moderation, safety screening, check-ins):
+ * answer straight away without thinking, so a small limit is plenty.
+ */
+export const QUICK = { max_tokens: 1024, thinking: { type: "disabled" as const } };
 
 let client: Anthropic | null = null;
 export function anthropic(): Anthropic {
@@ -81,7 +88,7 @@ export async function generateNext(
 ): Promise<WhyOutput> {
   const response = await anthropic().messages.parse({
     model: MODEL,
-    max_tokens: 16000,
+    max_tokens: 8000,
     system: SYSTEM_PROMPT,
     messages: toApiMessages(history, questionNumber, allowReask, reminder, sport),
     output_config: { effort: "low", format: zodOutputFormat(WhyOutput) },
@@ -105,7 +112,7 @@ export async function classifySafety(history: ChatMessage[]): Promise<ConcernCat
   const latest = history[history.length - 1].content;
   const response = await anthropic().messages.parse({
     model: MODEL,
-    max_tokens: 16000,
+    ...QUICK,
     system: SAFETY_PROMPT,
     messages: [
       {
