@@ -2,13 +2,12 @@ import { habitsComplete, type Habit } from "./habitRules.ts";
 
 // Askesis tokens. An athlete earns one for a day when every must do is
 // checked off, plus at least one want to do and one wish to do, and they
-// slept between 9½ and 10 hours the night before. One token per day at most.
+// slept at least 9½ hours the night before. One token per day at most.
 
 export const TOKEN_SLEEP_MIN = 9.5;
-export const TOKEN_SLEEP_MAX = 10;
 
 export function earnsToken(habits: Habit[], checked: number[], sleep: number | null): boolean {
-  if (sleep === null || sleep < TOKEN_SLEEP_MIN || sleep > TOKEN_SLEEP_MAX) return false;
+  if (sleep === null || sleep < TOKEN_SLEEP_MIN) return false;
   if (!habitsComplete(habits)) return false;
   const done = (h: Habit) => checked.includes(h.id);
   const tier = (t: Habit["tier"]) => habits.filter((h) => h.tier === t);

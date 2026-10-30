@@ -12,21 +12,25 @@ const habits: Habit[] = [
 ];
 const all = [1, 2, 3, 4, 5];
 
-test("all musts, one want, one wish plus 9½–10 hours of sleep earns a token", () => {
+test("all musts, one want, one wish plus at least 9½ hours of sleep earns a token", () => {
   const more: Habit[] = [...habits, { id: 6, tier: "want", title: "f" }, { id: 7, tier: "wish", title: "g" }];
   assert.equal(earnsToken(more, [1, 2, 3, 6, 5], 9.5), true);
   assert.equal(earnsToken(more, [1, 2, 3, 4, 6], 10), false); // no wish
   assert.equal(earnsToken(more, [1, 2, 4, 5], 10), false); // a must missed
 });
 
-test("every habit plus 9½–10 hours of sleep earns a token", () => {
+test("every habit plus at least 9½ hours of sleep earns a token", () => {
   assert.equal(earnsToken(habits, all, 9.5), true);
   assert.equal(earnsToken(habits, all, 10), true);
 });
 
-test("sleep outside 9½–10 hours doesn't", () => {
+test("9½ hours or more counts, with no upper limit", () => {
+  assert.equal(earnsToken(habits, all, 10.5), true);
+  assert.equal(earnsToken(habits, all, 12), true);
+});
+
+test("under 9½ hours doesn't", () => {
   assert.equal(earnsToken(habits, all, 9), false);
-  assert.equal(earnsToken(habits, all, 10.5), false);
   assert.equal(earnsToken(habits, all, null), false);
 });
 
