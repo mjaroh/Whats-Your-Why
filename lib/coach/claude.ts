@@ -1,6 +1,6 @@
 import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
-import { anthropic, MODEL } from "../claude";
+import { anthropic, MODEL, QUICK } from "../claude";
 import type { CoachMessage, Why } from "../athletes";
 import { stripTags, toApiMessages } from "./history";
 import { checkinPrompt, coachSystemPrompt, groupCheckinPrompt } from "./prompt";
@@ -29,7 +29,7 @@ export function streamCoachReply(opts: {
   }
   return anthropic().messages.stream({
     model: MODEL,
-    max_tokens: 16000,
+    max_tokens: 4000,
     system: [
       {
         type: "text",
@@ -66,7 +66,7 @@ export async function generateCheckin(opts: {
 async function writeCheckin(opts: Parameters<typeof generateCheckin>[0], note: string): Promise<string> {
   const response = await anthropic().messages.create({
     model: MODEL,
-    max_tokens: 16000,
+    ...QUICK,
     system: coachSystemPrompt(opts.firstName, opts.why, opts.habits ?? null),
     messages: [{ role: "user", content: checkinPrompt(opts.firstName, opts.weekday, opts.recentCheckins) + note }],
     output_config: { effort: "low" },
@@ -91,7 +91,7 @@ async function writeGroupCheckin(weekday: string, recent: string[]): Promise<str
   const response = await anthropic().messages.create(
     {
       model: MODEL,
-      max_tokens: 16000,
+      ...QUICK,
       system: `You write for Askesis, in the voice of Michael Jaroh.\n\n<voice>\n${VOICE_GUIDE}\n</voice>`,
       messages: [{ role: "user", content: groupCheckinPrompt(weekday, recent) }],
       output_config: { effort: "low" },

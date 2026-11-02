@@ -56,3 +56,19 @@ test("check-ins lose labels copied from history", async () => {
   assert.equal(stripTags("Friday. What are you proud of?"), "Friday. What are you proud of?");
   assert.equal(stripTags("Keep [this] word"), "Keep [this] word");
 });
+
+test("failed coach replies are left out of the history the model reads", async () => {
+  const { toApiMessages, COACH_FALLBACK } = await import("../lib/coach/history.ts");
+  const turns = toApiMessages(
+    [
+      { role: "user", content: "Hey", kind: "chat" },
+      { role: "assistant", content: COACH_FALLBACK, kind: "chat" },
+      { role: "user", content: "What should I think about today?", kind: "chat" },
+      { role: "assistant", content: COACH_FALLBACK, kind: "chat" },
+    ],
+    "Hello?",
+  );
+  assert.equal(turns.length, 1);
+  assert.equal(turns[0].role, "user");
+  assert.doesNotMatch(String(turns[0].content), /train of thought/);
+});
