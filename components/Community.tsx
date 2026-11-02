@@ -195,6 +195,7 @@ export function Community(props: {
 
   return (
     <AppShell
+      swipe="group"
       scrollRef={scrollRef}
       header={<AppNav active="group" me={props.nav} />}
       footer={

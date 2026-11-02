@@ -208,6 +208,22 @@ html:has(.app-shell) body {
   flex-direction: column;
   background: var(--color-ink);
 }
+/* Swiping between Group, Coach and Profile (components/PageSwipe.ts). */
+.page-enter-right {
+  animation: page-enter-right 0.3s ease-out both;
+}
+.page-enter-left {
+  animation: page-enter-left 0.3s ease-out both;
+}
+@keyframes page-enter-right {
+  from { opacity: 0; transform: translateX(30%); }
+}
+@keyframes page-enter-left {
+  from { opacity: 0; transform: translateX(-30%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-right, .page-enter-left { animation: none; }
+}
 .app-scroll {
   flex: 1 1 auto;
   min-height: 0;

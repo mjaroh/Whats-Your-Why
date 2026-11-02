@@ -114,7 +114,10 @@ export function Profile(props: {
   }
 
   return (
-    <AppShell header={<AppNav active="profile" me={{ username: props.username, hasAvatar, version: photoVersion }} />}>
+    <AppShell
+      swipe="profile"
+      header={<AppNav active="profile" me={{ username: props.username, hasAvatar, version: photoVersion }} />}
+    >
       <div className="mx-auto w-full max-w-2xl px-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+2rem))]">
         {/* Photo, username, why */}
         <section className="relative flex flex-col items-center pt-8 text-center">

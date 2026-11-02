@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePageSwipe, type SwipePage } from "./PageSwipe";
 
 /**
  * A full-screen screen with a fixed top bar and footer: only the middle
  * scrolls (see .app-shell in globals.css). It follows the visible area of the
  * screen, so when the phone keyboard opens the bar stays at the top and the
- * composer sits right above the keyboard.
+ * composer sits right above the keyboard. With `swipe`, it's one of the three
+ * main screens, and swiping sideways moves to the next one.
  */
 export function AppShell(props: {
   header: React.ReactNode;
   footer?: React.ReactNode;
   scrollRef?: React.Ref<HTMLDivElement>;
+  swipe?: SwipePage;
   children: React.ReactNode;
 }) {
+  const shell = useRef<HTMLDivElement>(null);
+  usePageSwipe(props.swipe, shell);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -35,7 +41,7 @@ export function AppShell(props: {
   }, []);
 
   return (
-    <div className="app-shell">
+    <div ref={shell} className="app-shell">
       {props.header}
       <div ref={props.scrollRef} className="app-scroll">
         {props.children}

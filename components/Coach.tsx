@@ -186,6 +186,7 @@ export function Coach(props: {
 
   return (
     <AppShell
+      swipe="coach"
       scrollRef={scrollRef}
       header={<AppNav active="coach" me={props.nav} />}
       footer={
