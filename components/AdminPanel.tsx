@@ -41,6 +41,8 @@ export function AdminPanel(props: { reports: Report[]; crises: CrisisItem[]; vid
       <a href="/community" className="text-sm text-paper/60">← Back to the group</a>
       <h1 className="font-display mt-6 text-3xl font-bold tracking-tight">Admin</h1>
 
+      <AiCheck />
+
       <section className="mt-10">
         <h2 className="text-xs tracking-[0.2em] text-mute uppercase">Videos waiting for approval ({videos.length})</h2>
         <p className="mt-2 text-sm text-mute">
@@ -105,5 +107,69 @@ export function AdminPanel(props: { reports: Report[]; crises: CrisisItem[]; vid
         </div>
       </section>
     </main>
+  );
+}
+
+type AiResult = {
+  model: string;
+  key: { set: boolean; ending?: string; length?: number };
+  checks: Record<string, { ok: boolean; ms: number; status?: number; type?: string; message?: string }>;
+};
+
+/** Sends one tiny request to the AI and shows exactly what came back. */
+function AiCheck() {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<AiResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/ai-check");
+      if (!res.ok) throw new Error(`The check itself failed (${res.status}).`);
+      setResult((await res.json()) as AiResult);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-10 border border-line p-4">
+      <h2 className="text-xs tracking-[0.2em] text-mute uppercase">AI connection</h2>
+      <p className="mt-2 text-sm text-mute">Checks the coach, the group screening and the daily questions can reach the AI.</p>
+      <button
+        type="button"
+        onClick={run}
+        disabled={busy}
+        className="mt-4 border border-line px-3 py-2 text-xs tracking-[0.1em] uppercase hover:border-paper disabled:opacity-50"
+      >
+        {busy ? "Testing…" : "Test AI connection"}
+      </button>
+      {error && <p className="mt-3 text-sm text-alert">{error}</p>}
+      {result && (
+        <div className="mt-4 space-y-2 text-sm">
+          <p>
+            API key:{" "}
+            {result.key.set ? (
+              <>
+                set, ends in <span className="font-mono">…{result.key.ending}</span> ({result.key.length} characters)
+              </>
+            ) : (
+              <span className="text-alert">missing</span>
+            )}
+          </p>
+          <p>Model: {result.model}</p>
+          {Object.entries(result.checks).map(([name, c]) => (
+            <p key={name} className={c.ok ? "" : "text-alert"}>
+              {name === "text" ? "Writing" : "Screening"}:{" "}
+              {c.ok ? `working (${(c.ms / 1000).toFixed(1)}s)` : `failed${c.status ? ` (${c.status}${c.type ? ` ${c.type}` : ""})` : ""}: ${c.message}`}
+            </p>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
